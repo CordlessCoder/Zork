@@ -3,13 +3,14 @@ package org.example;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 public class Player {
+    private final ArrayList<String> items = new ArrayList<>();
     private String name;
     @JsonProperty("room")
-    private String currentRoom;
+    private String currentRoomName;
 
     public static Player fromReader(InputStream reader) {
         return new ObjectMapper().readValue(reader, Player.class);
@@ -20,11 +21,11 @@ public class Player {
     }
 
     public String getCurrentRoomName() {
-        return currentRoom;
+        return currentRoomName;
     }
 
-    public void setCurrentRoom(String room) {
-        this.currentRoom = room;
+    public void setCurrentRoomName(String room) {
+        this.currentRoomName = room;
     }
 
 //    public void move(String direction) {
@@ -39,9 +40,6 @@ public class Player {
 
     @Override
     public String toString() {
-        return "Player{" +
-                "name='" + name + '\'' +
-                ", currentRoom='" + currentRoom + '\'' +
-                '}';
+        return "Player{" + "name='" + name + '\'' + ", currentRoom='" + currentRoomName + '\'' + '}';
     }
 }

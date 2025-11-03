@@ -10,8 +10,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Room {
+    private final ArrayList<String> items = new ArrayList<>();
     private String description;
-    private ArrayList<String> items;
     @JsonProperty("paths")
     private HashMap<String, String> paths = new HashMap<>(); // Map direction to neighboring Room
     @JsonIgnore
@@ -19,7 +19,7 @@ public class Room {
 
     public static Room fromReader(String path, InputStream input) {
         var room = new ObjectMapper().readValue(input, Room.class);
-        room.filename = Path.of(path).getFileName().toString().replaceFirst("[.][^.]+$", "");;
+        room.filename = Path.of(path).getFileName().toString().replaceFirst("[.][^.]+$", "");
         return room;
     }
 
@@ -49,12 +49,7 @@ public class Room {
 
     @Override
     public String toString() {
-        return "Room{" +
-                "description='" + description + '\'' +
-                ", items=" + items +
-                ", filename='" + filename + '\'' +
-                ", paths=" + paths +
-                '}';
+        return "Room{" + "description='" + description + '\'' + ", items=" + items + ", filename='" + filename + '\'' + ", paths=" + paths + '}';
     }
 
     public String getFilename() {

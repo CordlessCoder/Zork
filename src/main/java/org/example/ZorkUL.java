@@ -1,17 +1,4 @@
 package org.example;
-// This game is a classic text-based adventure set in a university environment.
-//    The player starts outside the main entrance and can navigate through different rooms like a
-//    lecture theatre, campus pub, computing lab, and admin office using simple text commands (e.g., "go east", "go west").
-//     The game provides descriptions of each location and lists possible exits.
-//
-// Key features include:
-// Room navigation: Moving among interconnected rooms with named exits.
-// Simple command parser: Recognizes a limited set of commands like "go", "help", and "quit".
-// Player character: Tracks current location and handles moving between rooms.
-// Text descriptions: Provides immersive text output describing the player's surroundings and available options.
-// Help system: Lists valid commands to guide the player.
-// Overall, it recreates the classic Zork interactive fiction experience with a university-themed setting,
-// emphasizing exploration and simple command-driven gameplay
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
@@ -25,11 +12,6 @@ public class ZorkUL {
     private final HashMap<String, Item> items = new HashMap<>();
     private Player player;
 
-    public Room getCurrentRoom() {
-        var room_name = player.getCurrentRoomName();
-        return rooms.get(room_name);
-    }
-
     public ZorkUL() {
         createRooms();
         parser = new Parser();
@@ -39,6 +21,11 @@ public class ZorkUL {
         ZorkUL game = new ZorkUL();
         System.out.println(game);
         game.play();
+    }
+
+    public Room getCurrentRoom() {
+        var room_name = player.getCurrentRoomName();
+        return rooms.get(room_name);
     }
 
     private void createRooms() {
@@ -139,17 +126,13 @@ public class ZorkUL {
         if (nextRoom == null) {
             System.out.println("There is no door!");
         } else {
-            player.setCurrentRoom(nextRoom.getFilename());
+            player.setCurrentRoomName(nextRoom.getFilename());
             System.out.println(rooms.get(player.getCurrentRoomName()).getLongDescription());
         }
     }
 
     @Override
     public String toString() {
-        return "ZorkUL{" +
-                "parser=" + parser +
-                ", rooms=" + rooms +
-                ", player=" + player +
-                '}';
+        return "ZorkUL{" + "parser=" + parser + ", rooms=" + rooms + ", player=" + player + '}';
     }
 }
