@@ -75,7 +75,7 @@ public class ZorkUL {
         System.out.println("Welcome to the University adventure!");
         System.out.println("Type 'help' if you need help.");
         System.out.println();
-        System.out.println(this.getCurrentRoom().getLongDescription());
+        lookMessage();
     }
 
     private boolean processCommand(Command command) {
@@ -92,6 +92,15 @@ public class ZorkUL {
                 break;
             case "go":
                 goRoom(command);
+                break;
+            case "take":
+                takeItem(command);
+                break;
+            case "drop":
+                dropItem(command);
+                break;
+            case "look":
+                lookMessage();
                 break;
             case "quit":
                 if (command.hasSecondWord()) {
@@ -113,6 +122,38 @@ public class ZorkUL {
         parser.showCommands();
     }
 
+    private void takeItem(Command command) {
+        if (!command.hasSecondWord()) {
+            System.out.println("Take what?");
+            return;
+        }
+        var item_name = command.getSecondWord();
+        if (!getCurrentRoom().takeItem(item_name)) {
+            System.out.println("I can't find this item!");
+            return;
+        }
+        player.addItem(item_name);
+    }
+
+    private void dropItem(Command command) {
+        if (!command.hasSecondWord()) {
+            System.out.println("Drop what?");
+            return;
+        }
+        var item_name = command.getSecondWord();
+        if (!player.hasItem(item_name)) {
+            System.out.println("I don't have this!");
+            return;
+        }
+        player.removeItem(item_name);
+        getCurrentRoom().addItem(item_name);
+    }
+
+    private void lookMessage() {
+        System.out.println("Your items: " + player.getItemString());
+        System.out.println(rooms.get(player.getCurrentRoomName()).getLongDescription());
+    }
+
     private void goRoom(Command command) {
         if (!command.hasSecondWord()) {
             System.out.println("Go where?");
@@ -127,7 +168,7 @@ public class ZorkUL {
             System.out.println("There is no door!");
         } else {
             player.setCurrentRoomName(nextRoom.getFilename());
-            System.out.println(rooms.get(player.getCurrentRoomName()).getLongDescription());
+            lookMessage();
         }
     }
 

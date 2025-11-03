@@ -6,11 +6,12 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class Room {
-    private final ArrayList<String> items = new ArrayList<>();
+    @JsonProperty("items")
+    private HashSet<String> items = new HashSet<>();
     private String description;
     @JsonProperty("paths")
     private HashMap<String, String> paths = new HashMap<>(); // Map direction to neighboring Room
@@ -21,6 +22,14 @@ public class Room {
         var room = new ObjectMapper().readValue(input, Room.class);
         room.filename = Path.of(path).getFileName().toString().replaceFirst("[.][^.]+$", "");
         return room;
+    }
+
+    public void addItem(String itemName) {
+        items.add(itemName);
+    }
+
+    public boolean takeItem(String itemName) {
+        return items.remove(itemName);
     }
 
     public String getDescription() {
@@ -35,6 +44,14 @@ public class Room {
         return paths.get(direction);
     }
 
+    public String getItemString() {
+        StringBuilder sb = new StringBuilder();
+        for (String item : items) {
+            sb.append(item).append(" ");
+        }
+        return sb.toString().trim();
+    }
+
     public String getExitString() {
         StringBuilder sb = new StringBuilder();
         for (String direction : paths.keySet()) {
@@ -44,7 +61,7 @@ public class Room {
     }
 
     public String getLongDescription() {
-        return "You are " + description + ".\nExits: " + getExitString();
+        return "You are " + description + ".\nExits: " + getExitString() + "\nItems: " + getItemString();
     }
 
     @Override

@@ -5,9 +5,11 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Player {
-    private final ArrayList<String> items = new ArrayList<>();
+    private final Set<String> items = new HashSet<>();
     private String name;
     @JsonProperty("room")
     private String currentRoomName;
@@ -20,12 +22,30 @@ public class Player {
         return name;
     }
 
+    public String getItemString() {
+        StringBuilder sb = new StringBuilder();
+        for (String item : items) {
+            sb.append(item).append(" ");
+        }
+        return sb.toString().trim();
+    }
+
     public String getCurrentRoomName() {
         return currentRoomName;
     }
 
     public void setCurrentRoomName(String room) {
         this.currentRoomName = room;
+    }
+
+    public void removeItem(String item_name) {
+        items.remove(item_name);
+    }
+    public void addItem(String item_name) {
+        items.add(item_name);
+    }
+    public boolean hasItem(String item_name) {
+        return items.contains(item_name);
     }
 
 //    public void move(String direction) {
