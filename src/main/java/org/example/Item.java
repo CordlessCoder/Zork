@@ -1,55 +1,33 @@
 package org.example;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import tools.jackson.databind.ObjectMapper;
+
+import java.io.InputStream;
+import java.nio.file.Path;
+
 public class Item {
     private String description;
     private String name;
-    private String location;
-    private int id;
-    private boolean isVisible;
+    @JsonIgnore
+    private String filename;
 
-    public Item(String name, String description) {
-        this.name = name;
-        this.description = description;
-        this.isVisible = true;
+
+    public static Item fromReader(String path, InputStream reader) {
+        var item = new ObjectMapper().readValue(reader, Item.class);
+        item.filename = Path.of(path).getFileName().toString().replaceFirst("[.][^.]+$", "");
+        return item;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public boolean isVisible() {
-        return isVisible;
-    }
-
-    public void setVisible(boolean visible) {
-        isVisible = visible;
+    public String getFilename() {
+        return filename;
     }
 }
