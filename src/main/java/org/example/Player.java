@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.HashSet;
 
 public class Player {
@@ -14,6 +15,9 @@ public class Player {
     @JsonProperty("room")
     private String currentRoomName;
 
+    public void writeInto(OutputStream writer) {
+        new ObjectMapper().writeValue(writer, this);
+    }
     public static Player fromReader(InputStream reader) {
         return new ObjectMapper().readValue(reader, Player.class);
     }
