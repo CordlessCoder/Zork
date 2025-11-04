@@ -5,16 +5,16 @@ import io.github.classgraph.ScanResult;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Scanner;
 
 public class ZorkUL {
-    private final Parser parser;
     private final HashMap<String, Room> rooms = new HashMap<>();
     private final HashMap<String, Item> items = new HashMap<>();
+    private boolean isExitRequested = false;
     private Player player;
 
     public ZorkUL() {
         createRooms();
-        parser = new Parser();
     }
 
     public static void main(String[] args) {
@@ -62,10 +62,17 @@ public class ZorkUL {
     public void play() {
         printWelcome();
 
-        boolean finished = false;
-        while (!finished) {
-            Command command = parser.getCommand();
-            finished = processCommand(command);
+        try (var input = new Scanner(System.in)) {
+            while (!isExitRequested) {
+                System.out.print("> ");
+                var line = input.nextLine();
+                var cmd = CommandRegistry.parse(line);
+                if (cmd.isEmpty()) {
+                    System.out.println("Unknown command.");
+                    continue;
+                }
+                cmd.get().execute(this);
+            }
         }
         System.out.println("Thank you for playing. Goodbye.");
     }
@@ -78,56 +85,13 @@ public class ZorkUL {
         lookMessage();
     }
 
-    private boolean processCommand(Command command) {
-        String commandWord = command.getCommandWord();
-
-        if (commandWord == null) {
-            System.out.println("I don't understand your command...");
-            return false;
-        }
-
-        switch (commandWord) {
-            case "help":
-                printHelp();
-                break;
-            case "go":
-                goRoom(command);
-                break;
-            case "take":
-                takeItem(command);
-                break;
-            case "drop":
-                dropItem(command);
-                break;
-            case "look":
-                lookMessage();
-                break;
-            case "quit":
-                if (command.hasSecondWord()) {
-                    System.out.println("Quit what?");
-                    return false;
-                } else {
-                    return true; // signal to quit
-                }
-            default:
-                System.out.println("I don't know what you mean...");
-                break;
-        }
-        return false;
-    }
-
-    private void printHelp() {
+    void printHelp() {
         System.out.println("You are lost. You are alone. You wander around the university.");
-        System.out.print("Your command words are: ");
-        parser.showCommands();
+        System.out.println("Possible commands are:");
+        System.out.println(CommandRegistry.describeCommands());
     }
 
-    private void takeItem(Command command) {
-        if (!command.hasSecondWord()) {
-            System.out.println("Take what?");
-            return;
-        }
-        var item_name = command.getSecondWord();
+    void takeItem(String item_name) {
         if (!getCurrentRoom().takeItem(item_name)) {
             System.out.println("I can't find this item!");
             return;
@@ -135,12 +99,7 @@ public class ZorkUL {
         player.addItem(item_name);
     }
 
-    private void dropItem(Command command) {
-        if (!command.hasSecondWord()) {
-            System.out.println("Drop what?");
-            return;
-        }
-        var item_name = command.getSecondWord();
+    void dropItem(String item_name) {
         if (!player.hasItem(item_name)) {
             System.out.println("I don't have this!");
             return;
@@ -149,31 +108,30 @@ public class ZorkUL {
         getCurrentRoom().addItem(item_name);
     }
 
+
     private void lookMessage() {
         System.out.println("Your items: " + player.getItemString());
         System.out.println(rooms.get(player.getCurrentRoomName()).getLongDescription());
     }
 
-    private void goRoom(Command command) {
-        if (!command.hasSecondWord()) {
-            System.out.println("Go where?");
-            return;
-        }
-
-        String direction = command.getSecondWord();
-
-        Room nextRoom = rooms.get(this.getCurrentRoom().getExitName(direction));
+    void goTo(String place) {
+        Room nextRoom = rooms.get(this.getCurrentRoom().getExitName(place));
 
         if (nextRoom == null) {
             System.out.println("There is no door!");
-        } else {
-            player.setCurrentRoomName(nextRoom.getFilename());
-            lookMessage();
+            return;
         }
+        player.setCurrentRoomName(nextRoom.getFilename());
+        lookMessage();
     }
+
+    void setExitRequested() {
+        this.isExitRequested = true;
+    }
+
 
     @Override
     public String toString() {
-        return "ZorkUL{" + "parser=" + parser + ", rooms=" + rooms + ", player=" + player + '}';
+        return "ZorkUL{" + "rooms=" + rooms + ", items=" + items + ", isExitRequested=" + isExitRequested + ", player=" + player + '}';
     }
 }

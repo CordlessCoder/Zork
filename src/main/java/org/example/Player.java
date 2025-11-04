@@ -4,12 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Set;
 
 public class Player {
-    private final Set<String> items = new HashSet<>();
+    @JsonProperty("items")
+    private final HashSet<String> items = new HashSet<>();
+    @JsonProperty("name")
     private String name;
     @JsonProperty("room")
     private String currentRoomName;

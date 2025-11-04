@@ -1,27 +1,139 @@
 package org.example;
 
-public class Command {
-    private final String commandWord;
-    private final String secondWord;
+import java.util.Optional;
 
-    public Command(String firstWord, String secondWord) {
-        this.commandWord = firstWord;
-        this.secondWord = secondWord;
+public abstract class Command {
+    abstract void execute(ZorkUL state);
+}
+
+
+class TakeItemCommandParser implements CommandParser {
+    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^take", "^take ([a-zA-Z_]+)$", "Take what?", match -> {
+        var item = match.group(1);
+        return Optional.of(new Command() {
+            @Override
+            void execute(ZorkUL state) {
+                state.takeItem(item);
+            }
+        });
+    });
+
+    @Override
+    public Optional<Command> parse(String text) {
+        return matcher.apply(text);
     }
 
-    public String getCommandWord() {
-        return commandWord;
+    @Override
+    public String getName() {
+        return "take";
     }
 
-    public String getSecondWord() {
-        return secondWord;
+    @Override
+    public String getDescription() {
+        return "Pick up an item";
+    }
+}
+
+class DropItemCommandParser implements CommandParser {
+    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^drop", "^drop ([a-zA-Z_]+)$", "Drop what?", match -> {
+        var item = match.group(1);
+        return Optional.of(new Command() {
+            @Override
+            void execute(ZorkUL state) {
+                state.dropItem(item);
+            }
+        });
+    });
+
+    @Override
+    public Optional<Command> parse(String text) {
+        return matcher.apply(text);
     }
 
-    public boolean isUnknown() {
-        return commandWord == null;
+    @Override
+    public String getName() {
+        return "drop";
     }
 
-    public boolean hasSecondWord() {
-        return secondWord != null;
+    @Override
+    public String getDescription() {
+        return "Drop an item";
+    }
+}
+
+class GoCommandParser implements CommandParser {
+    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^(?:go|move)", "^(?:go|move)(?: to)?(?: the)? (.+)$", "Go where?", match -> {
+        var place = match.group(1);
+        return Optional.of(new Command() {
+            @Override
+            void execute(ZorkUL state) {
+                state.goTo(place);
+            }
+        });
+    });
+
+    @Override
+    public Optional<Command> parse(String text) {
+        return matcher.apply(text);
+    }
+
+    @Override
+    public String getName() {
+        return "go";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Go through an exit";
+    }
+}
+
+class HelpCommandParser implements CommandParser {
+    @Override
+    public Optional<Command> parse(String text) {
+        if (!text.equals("help")) {
+            return Optional.empty();
+        }
+        return Optional.of(new Command() {
+            @Override
+            void execute(ZorkUL state) {
+                state.printHelp();
+            }
+        });
+    }
+
+    @Override
+    public String getName() {
+        return "help";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Show this help message";
+    }
+}
+
+class ExitCommandParser implements CommandParser {
+    @Override
+    public Optional<Command> parse(String text) {
+        if (!text.equals("exit")) {
+            return Optional.empty();
+        }
+        return Optional.of(new Command() {
+            @Override
+            void execute(ZorkUL state) {
+                state.setExitRequested();
+            }
+        });
+    }
+
+    @Override
+    public String getName() {
+        return "exit";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Exit the game";
     }
 }
