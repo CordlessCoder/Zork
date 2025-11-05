@@ -8,7 +8,7 @@ public abstract class Command {
 
 
 class TakeItemCommandParser implements CommandParser {
-    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^take", "^take ([a-zA-Z_]+)$", "Take what?", match -> {
+    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^(?:take|pick up)", "^(?:take|pick up)(?: the)? ([a-zA-Z_]+)$", "Take what?", match -> {
         var item = match.group(1);
         return Optional.of(new Command() {
             @Override
@@ -35,7 +35,7 @@ class TakeItemCommandParser implements CommandParser {
 }
 
 class DropItemCommandParser implements CommandParser {
-    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^drop", "^drop ([a-zA-Z_]+)$", "Drop what?", match -> {
+    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^drop", "^drop(?: the)? ([a-zA-Z_]+)$", "Drop what?", match -> {
         var item = match.group(1);
         return Optional.of(new Command() {
             @Override
@@ -85,6 +85,31 @@ class GoCommandParser implements CommandParser {
     @Override
     public String getDescription() {
         return "Go through an exit";
+    }
+}
+
+class LookCommandParser implements CommandParser {
+    @Override
+    public Optional<Command> parse(String text) {
+        if (!text.equals("look")) {
+            return Optional.empty();
+        }
+        return Optional.of(new Command() {
+            @Override
+            void execute(ZorkUL state) {
+                state.lookMessage();
+            }
+        });
+    }
+
+    @Override
+    public String getName() {
+        return "look";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Look around";
     }
 }
 

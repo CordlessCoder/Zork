@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,14 +18,15 @@ public class Room {
     @JsonIgnore
     private String filename;
 
-    public void writeAt(String room_directory_path) {
-        var path = Path.of(room_directory_path, filename);
-        new ObjectMapper().writeValue(path, this);
-    }
     public static Room fromReader(String path, InputStream input) {
         var room = new ObjectMapper().readValue(input, Room.class);
         room.filename = Path.of(path).getFileName().toString().replaceFirst("[.][^.]+$", "");
         return room;
+    }
+
+    public void writeAt(String room_directory_path) {
+        var path = Path.of(room_directory_path, filename);
+        new ObjectMapper().writeValue(path, this);
     }
 
     public void addItem(String itemName) {

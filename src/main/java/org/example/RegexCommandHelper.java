@@ -13,12 +13,8 @@ public class RegexCommandHelper<R> {
 
     public RegexCommandHelper(
             // The smallest regex
-            String minimal_pattern,
-            String complete_pattern,
-            String incomplete_message,
-            Function<Matcher, Optional<R>> complete_callback
-    ) {
-        this.minimal_pattern = Pattern.compile( minimal_pattern);
+            String minimal_pattern, String complete_pattern, String incomplete_message, Function<Matcher, Optional<R>> complete_callback) {
+        this.minimal_pattern = Pattern.compile(minimal_pattern);
         this.complete_pattern = Pattern.compile(complete_pattern);
         this.incomplete_message = incomplete_message;
         this.complete_callback = complete_callback;
@@ -29,9 +25,9 @@ public class RegexCommandHelper<R> {
         if (!complete_matcher.matches()) {
             if (minimal_pattern.matcher(text).matches()) {
                 System.out.println(incomplete_message);
-            };
+            }
             return Optional.empty();
-        };
+        }
         return complete_callback.apply(complete_matcher);
     }
 }

@@ -42,16 +42,14 @@ public class ZorkUL {
         }
         try (ScanResult scanResult = new ClassGraph().acceptPathsNonRecursive("items/").scan()) {
             scanResult.getResourcesWithExtension("json").forEach((resource -> {
-                Item item = null;
                 try {
-                    item = Item.fromReader(resource.getPath(), resource.open());
+                    Item item = Item.fromReader(resource.getPath(), resource.open());
+                    items.put(item.getFilename(), item);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                items.put(item.getFilename(), item);
             }));
         }
-        // create the player character and start outside
         try {
             player = Player.fromReader(ZorkUL.class.getClassLoader().getResource("player_initial_state.json").openStream());
         } catch (IOException e) {
@@ -109,7 +107,7 @@ public class ZorkUL {
     }
 
 
-    private void lookMessage() {
+    void lookMessage() {
         System.out.println("Your items: " + player.getItemString());
         System.out.println(rooms.get(player.getCurrentRoomName()).getLongDescription());
     }

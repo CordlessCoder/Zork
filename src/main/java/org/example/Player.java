@@ -15,11 +15,12 @@ public class Player {
     @JsonProperty("room")
     private String currentRoomName;
 
-    public void writeInto(OutputStream writer) {
-        new ObjectMapper().writeValue(writer, this);
-    }
     public static Player fromReader(InputStream reader) {
         return new ObjectMapper().readValue(reader, Player.class);
+    }
+
+    public void writeInto(OutputStream writer) {
+        new ObjectMapper().writeValue(writer, this);
     }
 
     public String getName() {
@@ -45,9 +46,11 @@ public class Player {
     public void removeItem(String item_name) {
         items.remove(item_name);
     }
+
     public void addItem(String item_name) {
         items.add(item_name);
     }
+
     public boolean hasItem(String item_name) {
         return items.contains(item_name);
     }
