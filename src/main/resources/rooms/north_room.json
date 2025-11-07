@@ -2,6 +2,6 @@
   "description": "north of the test room",
   "items": ["test_item"],
   "paths": {
-    "south": "test_room"
+    "South": "test_room"
   }
 }

@@ -6,15 +6,16 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 
 public class Room {
     @JsonProperty("items")
     private HashSet<String> items = new HashSet<>();
+    @JsonProperty("description")
     private String description;
     @JsonProperty("paths")
-    private HashMap<String, String> paths = new HashMap<>(); // Map direction to neighboring Room
+    private EnumMap<Direction, String> paths = new EnumMap<>(Direction.class);
     @JsonIgnore
     private String filename;
 
@@ -41,11 +42,11 @@ public class Room {
         return description;
     }
 
-    public void setExit(String direction, String neighbor) {
+    public void setExit(Direction direction, String neighbor) {
         paths.put(direction, neighbor);
     }
 
-    public String getExitName(String direction) {
+    public String getExitName(Direction direction) {
         return paths.get(direction);
     }
 
@@ -59,7 +60,7 @@ public class Room {
 
     public String getExitString() {
         StringBuilder sb = new StringBuilder();
-        for (String direction : paths.keySet()) {
+        for (final var direction : paths.keySet()) {
             sb.append(direction).append(" ");
         }
         return sb.toString().trim();

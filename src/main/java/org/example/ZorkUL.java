@@ -113,7 +113,14 @@ public class ZorkUL {
     }
 
     void goTo(String place) {
-        Room nextRoom = rooms.get(this.getCurrentRoom().getExitName(place));
+        var parsed_direction = Direction.fromString(place);
+        if (parsed_direction.isEmpty()) {
+            System.out.println("There is no door!");
+            return;
+        }
+        Direction direction = parsed_direction.get();
+
+        Room nextRoom = rooms.get(this.getCurrentRoom().getExitName(direction));
 
         if (nextRoom == null) {
             System.out.println("There is no door!");

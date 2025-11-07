@@ -1,6 +1,6 @@
 {
   "description": "in a test room",
   "paths": {
-    "north": "north_room"
+    "North": "north_room"
   }
 }
