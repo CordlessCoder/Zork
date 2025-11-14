@@ -1,6 +1,7 @@
 package org.example;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 // While working on this, I ran into multiple infuriating and senseless limitations:
@@ -13,6 +14,9 @@ import java.util.Optional;
 
 interface CommandParser {
     Optional<Command> parse(String text);
+
+    void autoComplete(GameState context, ArrayList<String> output, String text);
+    void registerDirectCompletions(CompletionTrie trie);
 
     String getName();
 
@@ -28,10 +32,12 @@ public class CommandRegistry {
         CommandRegistry.registerParser(new TakeItemCommandParser());
         CommandRegistry.registerParser(new DropItemCommandParser());
         CommandRegistry.registerParser(new GoCommandParser());
+        CommandRegistry.registerParser(new SaveCommandParser());
         CommandRegistry.registerParser(new ExitCommandParser());
     }
 
     private final ArrayList<CommandParser> commandParsers = new ArrayList<>();
+    private final CompletionTrie completionTrie = new CompletionTrie();
 
     private CommandRegistry() {
     }
@@ -55,8 +61,19 @@ public class CommandRegistry {
         return buffer.toString();
     }
 
-    public static void registerParser(CommandParser parser) {
+    private static void registerParser(CommandParser parser) {
         INSTANCE.commandParsers.add(parser);
+        parser.registerDirectCompletions(INSTANCE.completionTrie);
+    }
+
+    public static List<String> autocomplete(GameState context, String text) {
+        var results = INSTANCE.completionTrie.search(text);
+        if (results.isEmpty()) {
+            for (final var parser : INSTANCE.commandParsers) {
+                parser.autoComplete(context, results, text);
+            }
+        }
+        return results;
     }
 
     public static Optional<Command> parse(String text) {

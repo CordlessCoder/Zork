@@ -1,9 +1,10 @@
 module Zork {
-    exports org.example to javafx.graphics;
-    opens org.example to tools.jackson.databind;
+    opens org.example to javafx.graphics,javafx.fxml,tools.jackson.databind;
     requires com.fasterxml.jackson.annotation;
-    requires io.github.classgraph;
     requires javafx.controls;
     requires javafx.graphics;
     requires tools.jackson.databind;
+    requires dev.dirs;
+    requires javafx.fxml;
+    requires tools.jackson.core;
 }
