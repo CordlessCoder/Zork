@@ -6,4 +6,5 @@ module Zork {
     requires javafx.controls;
     requires javafx.graphics;
     requires tools.jackson.databind;
+    requires dev.dirs;
 }

@@ -2,6 +2,8 @@ package org.example;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.dirs.BaseDirectories;
+import dev.dirs.ProjectDirectories;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
 import tools.jackson.core.JacksonException;
@@ -9,8 +11,11 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class ZorkUL {
@@ -26,18 +31,39 @@ public class ZorkUL {
     private ZorkUL() {
     }
 
-    static void main(String[] args) {
-        ZorkUL game;
+    private static ZorkUL loadState(String name) {
+
+    }
+
+    private static ZorkUL saveState(String name) {
+
+    }
+
+    private static
+
+    private static Optional<ZorkUL> loadInitialState() {
+        Optional<ZorkUL> game = Optional.empty();
         try {
             var state_stream = Objects.requireNonNull(ZorkUL.class.getClassLoader().getResource("initial_state.json")).openStream();
-            game = ZorkUL.readFrom(state_stream);
+            game = Optional.of(ZorkUL.readFrom(state_stream));
             state_stream.close();
         } catch (NullPointerException p) {
             System.err.println("Unrecoverable error: Internal JSON file `initial_state.json` missing.");
-            return;
         } catch (IOException e) {
             System.err.println("Unrecoverable error: Internal JSON file `initial_state.json` unavailable.");
             e.printStackTrace();
+        }
+        return game;
+    }
+
+    static void main(String[] args) {
+        ZorkUL game;
+        var directories = ProjectDirectories.from("org", "example", "ZorkUL");
+        var user_data_directory = directories.dataDir;
+        var saves_dir = Path.of(user_data_directory, "saves").toFile();
+        var save_files = saves_dir.listFiles();
+        if (save_files == null) {
+            System.out.println("Could not access saves directory");
             return;
         }
         game.setupRoomNames();
@@ -55,6 +81,10 @@ public class ZorkUL {
             String name = room.getKey();
             room.getValue().setName(name);
         }
+    }
+
+    private void writeTo(OutputStream out) throws IOException {
+        new ObjectMapper().writeValue(out, this);
     }
 
     private static ZorkUL readFrom(InputStream input) throws JacksonException {
