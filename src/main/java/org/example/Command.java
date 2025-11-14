@@ -3,7 +3,7 @@ package org.example;
 import java.util.Optional;
 
 public abstract class Command {
-    abstract void execute(ZorkUL state);
+    abstract void execute(Zork state);
 }
 
 
@@ -12,7 +12,7 @@ class TakeItemCommandParser implements CommandParser {
         var item = match.group(1);
         return Optional.of(new Command() {
             @Override
-            void execute(ZorkUL state) {
+            void execute(Zork state) {
                 state.takeItem(item);
             }
         });
@@ -39,7 +39,7 @@ class DropItemCommandParser implements CommandParser {
         var item = match.group(1);
         return Optional.of(new Command() {
             @Override
-            void execute(ZorkUL state) {
+            void execute(Zork state) {
                 state.dropItem(item);
             }
         });
@@ -66,7 +66,7 @@ class GoCommandParser implements CommandParser {
         var place = match.group(1);
         return Optional.of(new Command() {
             @Override
-            void execute(ZorkUL state) {
+            void execute(Zork state) {
                 state.goTo(place);
             }
         });
@@ -96,7 +96,7 @@ class LookCommandParser implements CommandParser {
         }
         return Optional.of(new Command() {
             @Override
-            void execute(ZorkUL state) {
+            void execute(Zork state) {
                 state.lookMessage();
             }
         });
@@ -121,7 +121,7 @@ class HelpCommandParser implements CommandParser {
         }
         return Optional.of(new Command() {
             @Override
-            void execute(ZorkUL state) {
+            void execute(Zork state) {
                 state.printHelp();
             }
         });
@@ -146,7 +146,7 @@ class ExitCommandParser implements CommandParser {
         }
         return Optional.of(new Command() {
             @Override
-            void execute(ZorkUL state) {
+            void execute(Zork state) {
                 state.setExitRequested();
             }
         });

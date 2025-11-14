@@ -2,18 +2,19 @@ package org.example;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ScanResult;
+import dev.dirs.ProjectDirectories;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Scanner;
 
-public class ZorkUL {
+public class Zork {
     @JsonProperty("rooms")
     private HashMap<String, Room> rooms;
     @JsonProperty("items")
@@ -23,26 +24,49 @@ public class ZorkUL {
     @JsonProperty("player")
     private Player player;
 
-    private ZorkUL() {
+    private Zork() {
     }
 
-    static void main(String[] args) {
-        ZorkUL game;
+    public static Path getSaveDirectory() {
+        var directories = ProjectDirectories.from("org", "example", "ZorkUL");
+        var user_data_directory = directories.dataDir;
+        return Path.of(user_data_directory, "saves");
+    }
+
+    public static Optional<File[]> listSaveFiles() {
+        var saves_dir = getSaveDirectory().toFile();
+        var save_files = saves_dir.listFiles();
+        return Optional.ofNullable(save_files);
+    }
+
+    private static Zork loadState(String name) throws JacksonException {
+        var saves_path = getSaveDirectory();
+        var save_file_path = Path.of(saves_path.toString(), name + ".json");
+        return new ObjectMapper().readValue(save_file_path, Zork.class);
+    }
+
+    public static Optional<Zork> loadInitialState() {
+        Optional<Zork> game = Optional.empty();
         try {
-            var state_stream = Objects.requireNonNull(ZorkUL.class.getClassLoader().getResource("initial_state.json")).openStream();
-            game = ZorkUL.readFrom(state_stream);
+            var state_stream = Objects.requireNonNull(Zork.class.getClassLoader().getResource("initial_state.json")).openStream();
+
+            game = Optional.of(new ObjectMapper().readValue(state_stream, Zork.class));
             state_stream.close();
         } catch (NullPointerException p) {
             System.err.println("Unrecoverable error: Internal JSON file `initial_state.json` missing.");
-            return;
         } catch (IOException e) {
             System.err.println("Unrecoverable error: Internal JSON file `initial_state.json` unavailable.");
             e.printStackTrace();
-            return;
         }
-        game.setupRoomNames();
-        System.out.println(game);
-        game.play();
+        return game;
+    }
+
+
+    private void saveState(String name) throws JacksonException {
+        var saves_path = getSaveDirectory();
+        saves_path.toFile().mkdirs();
+        var save_file_path = Path.of(saves_path.toString(), name + ".json");
+        new ObjectMapper().writeValue(save_file_path, this);
     }
 
     public Room getCurrentRoom() {
@@ -50,41 +74,11 @@ public class ZorkUL {
         return rooms.get(room_name);
     }
 
-    private void setupRoomNames() {
+    public void fixupRoomNames() {
         for (var room : rooms.entrySet()) {
             String name = room.getKey();
             room.getValue().setName(name);
         }
-    }
-
-    private static ZorkUL readFrom(InputStream input) throws JacksonException {
-        return new ObjectMapper().readValue(input, ZorkUL.class);
-//        try (ScanResult scanResult = new ClassGraph().acceptPathsNonRecursive("rooms/").scan()) {
-//            scanResult.getResourcesWithExtension("json").forEach((resource -> {
-//                try {
-//                    Room room = Room.fromReader(resource.getPath(), resource.open());
-//                    System.out.println(room);
-//                    rooms.put(room.getFilename(), room);
-//                } catch (IOException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }));
-//        }
-//        try (ScanResult scanResult = new ClassGraph().acceptPathsNonRecursive("items/").scan()) {
-//            scanResult.getResourcesWithExtension("json").forEach((resource -> {
-//                try {
-//                    Item item = Item.fromReader(resource.getPath(), resource.open());
-//                    items.put(item.getFilename(), item);
-//                } catch (IOException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }));
-//        }
-//        try {
-//            player = Player.fromReader(ZorkUL.class.getClassLoader().getResource("player_initial_state.json").openStream());
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
     }
 
     public void play() {
