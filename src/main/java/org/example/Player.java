@@ -15,14 +15,6 @@ public class Player {
     @JsonProperty("room")
     private String currentRoomName;
 
-    public static Player fromReader(InputStream reader) {
-        return new ObjectMapper().readValue(reader, Player.class);
-    }
-
-    public void writeInto(OutputStream writer) {
-        new ObjectMapper().writeValue(writer, this);
-    }
-
     public String getName() {
         return name;
     }

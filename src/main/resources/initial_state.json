@@ -1,0 +1,30 @@
+{
+  "player": {
+    "name": "Guy",
+    "room": "test_room",
+    "items": []
+  },
+  "rooms": {
+    "north_room": {
+      "description": "north of the test room",
+      "items": [
+        "test_item"
+      ],
+      "paths": {
+        "South": "test_room"
+      }
+    },
+    "test_room": {
+      "description": "in a test room",
+      "paths": {
+        "North": "north_room"
+      }
+    }
+  },
+  "items": {
+    "test_item": {
+      "description": "a test item",
+      "name": "TEST"
+    }
+  }
+}

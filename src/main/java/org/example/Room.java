@@ -2,10 +2,7 @@ package org.example;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import tools.jackson.databind.ObjectMapper;
 
-import java.io.InputStream;
-import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.HashSet;
 
@@ -17,17 +14,14 @@ public class Room {
     @JsonProperty("paths")
     private EnumMap<Direction, String> paths = new EnumMap<>(Direction.class);
     @JsonIgnore
-    private String filename;
+    private String name;
 
-    public static Room fromReader(String path, InputStream input) {
-        var room = new ObjectMapper().readValue(input, Room.class);
-        room.filename = Path.of(path).getFileName().toString().replaceFirst("[.][^.]+$", "");
-        return room;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public void writeAt(String room_directory_path) {
-        var path = Path.of(room_directory_path, filename);
-        new ObjectMapper().writeValue(path, this);
+    public String getName() {
+        return name;
     }
 
     public void addItem(String itemName) {
@@ -72,10 +66,10 @@ public class Room {
 
     @Override
     public String toString() {
-        return "Room{" + "description='" + description + '\'' + ", items=" + items + ", filename='" + filename + '\'' + ", paths=" + paths + '}';
-    }
-
-    public String getFilename() {
-        return filename;
+        return "Room{" +
+                "items=" + items +
+                ", description='" + description + '\'' +
+                ", paths=" + paths +
+                '}';
     }
 }
