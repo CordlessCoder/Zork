@@ -6,6 +6,7 @@
   },
   "rooms": {
     "north_room": {
+      "name": "North Room",
       "description": "north of the test room",
       "items": [
         "test_item"
@@ -15,9 +16,34 @@
       }
     },
     "test_room": {
+      "name": "Test Room",
       "description": "in a test room",
       "paths": {
-        "North": "north_room"
+        "North": "north_room",
+        "East": "east_room",
+        "South": "south_room"
+      }
+    },
+    "east_room": {
+      "name": "East Room",
+      "description": "east of the test room",
+      "paths": {
+        "West": "test_room"
+      }
+    },
+    "south_room": {
+      "name": "South Room",
+      "description": "south of the test room",
+      "paths": {
+        "North": "test_room",
+        "East": "east_of_south_room"
+      }
+    },
+    "east_of_south_room": {
+      "name": "East of South Room",
+      "description": "east of the south room",
+      "paths": {
+        "West": "south_room"
       }
     }
   },

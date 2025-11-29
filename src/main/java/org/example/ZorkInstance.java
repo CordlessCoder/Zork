@@ -1,26 +1,30 @@
 package org.example;
 
 public class ZorkInstance {
-    public Box<GameState> state;
+    public GameState state;
 
     public ZorkInstance(GameState state) {
-        this.state = new Box<>(state);
+        this.state = state;
     }
 
     public void advanceGame(ViewController controller, String command) {
-        this.state.inner.controller = controller;
+        this.state.controller = controller;
         if (controller.WasExitRequested()) {
-            this.state.inner.isExitRequested = true;
+            this.state.isExitRequested = true;
             return;
         }
         var cmd = CommandRegistry.parse(command);
         if (cmd.isEmpty()) {
-            controller.presentUrgentMessage("Unknown command.");
-            controller.presentErrorMessage(CommandRegistry.autocomplete(this.state.inner, command).toString());
+            var suggestions = CommandRegistry.autocomplete(this.state, command);
+            if (suggestions.isEmpty()) {
+                controller.presentUrgentMessage("Unknown command.");
+            } else {
+                controller.presentUrgentMessage("Did you mean any of: " + String.join(", ", suggestions.stream().map(String::trim).filter(suggestion -> !suggestion.equals(command)).toList()) + "?");
+            }
             return;
         }
-        cmd.get().execute(this.state);
-        if (this.state.inner.isExitRequested) {
+        cmd.get().execute(this);
+        if (this.state.isExitRequested) {
             controller.notifyOfCompletion();
         }
     }

@@ -5,23 +5,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.Set;
 
 public class Room {
     @JsonProperty("items")
-    private HashSet<String> items = new HashSet<>();
+    HashSet<String> items = new HashSet<>();
     @JsonProperty("description")
     private String description;
     @JsonProperty("paths")
-    private EnumMap<Direction, String> paths = new EnumMap<>(Direction.class);
+    public EnumMap<Direction, String> paths = new EnumMap<>(Direction.class);
     @JsonIgnore
-    private String name;
+    private String id;
+    @JsonProperty("name")
+    public String name;
 
-    public void setName(String name) {
-        this.name = name;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getId() {
+        return id;
     }
 
     public void addItem(String itemName) {
@@ -70,6 +73,8 @@ public class Room {
                 "items=" + items +
                 ", description='" + description + '\'' +
                 ", paths=" + paths +
+                ", id='" + id + '\'' +
+                ", name='" + name + '\'' +
                 '}';
     }
 }

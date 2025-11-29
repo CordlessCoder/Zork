@@ -9,7 +9,7 @@ import java.util.HashSet;
 
 public class Player {
     @JsonProperty("items")
-    private final HashSet<String> items = new HashSet<>();
+    final HashSet<String> items = new HashSet<>();
     @JsonProperty("name")
     private String name;
     @JsonProperty("room")

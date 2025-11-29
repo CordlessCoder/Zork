@@ -1,6 +1,7 @@
 package org.example;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +30,7 @@ public class CommandRegistry {
     static {
         CommandRegistry.registerParser(new HelpCommandParser());
         CommandRegistry.registerParser(new LookCommandParser());
+        CommandRegistry.registerParser(new MapCommandParser());
         CommandRegistry.registerParser(new TakeItemCommandParser());
         CommandRegistry.registerParser(new DropItemCommandParser());
         CommandRegistry.registerParser(new GoCommandParser());

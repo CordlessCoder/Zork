@@ -5,29 +5,65 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 public abstract class Command {
-    abstract void execute(Box<GameState> state);
+    abstract void execute(ZorkInstance instance);
+}
+
+class ItemAutocompleteHelper {
+    public static void autoCompleteItemsInRoom(GameState context, ArrayList<String> output, String text, String before_name) {
+        var room = context.getCurrentRoom();
+        for (var item : room.items) {
+            var name = item.toLowerCase();
+            if (!name.startsWith(text.toLowerCase())) {
+                continue;
+            }
+            if (name.length() == text.length()) {
+                continue;
+            }
+            output.add(before_name + name);
+        }
+    }
+
+    public static void autoCompleteHeldItems(GameState context, ArrayList<String> output, String text, String before_name) {
+        for (var item : context.player.items) {
+            var name = item.toLowerCase();
+            if (!name.startsWith(text.toLowerCase())) {
+                continue;
+            }
+            if (name.length() == text.length()) {
+                continue;
+            }
+            output.add(before_name + name);
+        }
+    }
 }
 
 
 class TakeItemCommandParser implements CommandParser {
-    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^(?:take|pick up|grab)", "^(?:take|pick up|grab)(?: the)? ([a-zA-Z_]+)$", "Take what?", match -> {
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("^(?:take|pick up|grab)(?: the)? ([a-zA-Z_]*)$");
+    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^(?:take|pick up|grab)", COMMAND_PATTERN, "Take what?", match -> {
         var item = match.group(1);
         return Optional.of(new Command() {
             @Override
-            void execute(Box<GameState> state) {
-                state.inner.takeItem(item);
+            void execute(ZorkInstance instance) {
+                instance.state.takeItem(item);
             }
         });
     });
 
     @Override
     public void registerDirectCompletions(CompletionTrie trie) {
-        trie.insertAll("take ", "pick up ", "grab ");
+        trie.insertAll("take", "pick up", "grab");
     }
 
     @Override
     public void autoComplete(GameState context, ArrayList<String> output, String text) {
-        // TODO: Implement auto-complete for items in the room
+        var matcher = COMMAND_PATTERN.matcher(text);
+        if (!matcher.matches()) {
+            return;
+        }
+        var before_name = text.substring(0, matcher.start(1));
+        var item_name = matcher.group(1);
+        ItemAutocompleteHelper.autoCompleteItemsInRoom(context, output, item_name, before_name);
     }
 
     @Override
@@ -47,24 +83,31 @@ class TakeItemCommandParser implements CommandParser {
 }
 
 class DropItemCommandParser implements CommandParser {
-    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^drop", "^drop(?: the)? ([a-zA-Z_]+)$", "Drop what?", match -> {
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("^drop(?: the)? ([a-zA-Z_]*)$");
+    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^drop", COMMAND_PATTERN, "Drop what?", match -> {
         var item = match.group(1);
         return Optional.of(new Command() {
             @Override
-            void execute(Box<GameState> state) {
-                state.inner.dropItem(item);
+            void execute(ZorkInstance instance) {
+                instance.state.dropItem(item);
             }
         });
     });
 
     @Override
     public void registerDirectCompletions(CompletionTrie trie) {
-        trie.insertAll("drop ", "drop the ");
+        trie.insertAll("drop");
     }
 
     @Override
     public void autoComplete(GameState context, ArrayList<String> output, String text) {
-        // TODO: Implement auto-complete for currently held items
+        var matcher = COMMAND_PATTERN.matcher(text);
+        if (!matcher.matches()) {
+            return;
+        }
+        var before_name = text.substring(0, matcher.start(1));
+        var item_name = matcher.group(1);
+        ItemAutocompleteHelper.autoCompleteHeldItems(context, output, item_name, before_name);
     }
 
     @Override
@@ -84,24 +127,41 @@ class DropItemCommandParser implements CommandParser {
 }
 
 class GoCommandParser implements CommandParser {
-    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^(?:go|move)", "^(?:go|move)(?: to(?: the)?)? (.+)$", "Go where?", match -> {
+    private static final Pattern COMMAND_PATTERN  = Pattern.compile("^(?:go|move)(?: to(?: the)?)? (.*)$");
+    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^(?:go|move)", COMMAND_PATTERN, "Go where?", match -> {
         var place = match.group(1);
         return Optional.of(new Command() {
             @Override
-            void execute(Box<GameState> state) {
-                state.inner.goTo(place);
+            void execute(ZorkInstance instance) {
+                instance.state.goTo(place);
             }
         });
     });
 
     @Override
     public void registerDirectCompletions(CompletionTrie trie) {
-        trie.insertAll("go ", "move ", "go to ", "move to ", "go to the ", "move to the");
+        trie.insertAll("go", "move");
     }
 
     @Override
     public void autoComplete(GameState context, ArrayList<String> output, String text) {
-        // TODO: Implement auto-complete for directions with exits
+        var matcher = COMMAND_PATTERN.matcher(text);
+        if (!matcher.matches()) {
+            return;
+        }
+        var before_name = text.substring(0, matcher.start(1));
+        var exit_name = matcher.group(1);
+        var room = context.getCurrentRoom();
+        for (var exit : room.paths.keySet()) {
+            var name = exit.toString().toLowerCase();
+            if (!name.startsWith(exit_name.toLowerCase())) {
+                continue;
+            }
+            if (name.length() == exit_name.length()) {
+                continue;
+            }
+            output.add(before_name + name);
+        }
     }
 
     @Override
@@ -128,8 +188,8 @@ class LookCommandParser implements CommandParser {
         }
         return Optional.of(new Command() {
             @Override
-            void execute(Box<GameState> state) {
-                state.inner.lookMessage();
+            void execute(ZorkInstance instance) {
+                instance.state.lookMessage();
             }
         });
     }
@@ -154,6 +214,40 @@ class LookCommandParser implements CommandParser {
     }
 }
 
+class MapCommandParser implements CommandParser {
+    @Override
+    public Optional<Command> parse(String text) {
+        if (!text.equals("map")) {
+            return Optional.empty();
+        }
+        return Optional.of(new Command() {
+            @Override
+            void execute(ZorkInstance instance) {
+                instance.state.mapMessage();
+            }
+        });
+    }
+
+    @Override
+    public void registerDirectCompletions(CompletionTrie trie) {
+        trie.insertAll("map");
+    }
+
+    @Override
+    public void autoComplete(GameState context, ArrayList<String> output, String text) {
+    }
+
+    @Override
+    public String getName() {
+        return "map";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Show the map";
+    }
+}
+
 class HelpCommandParser implements CommandParser {
     @Override
     public Optional<Command> parse(String text) {
@@ -162,8 +256,8 @@ class HelpCommandParser implements CommandParser {
         }
         return Optional.of(new Command() {
             @Override
-            void execute(Box<GameState> state) {
-                state.inner.showHelp();
+            void execute(ZorkInstance instance) {
+                instance.state.showHelp();
             }
         });
     }
@@ -196,8 +290,8 @@ class ExitCommandParser implements CommandParser {
         }
         return Optional.of(new Command() {
             @Override
-            void execute(Box<GameState> state) {
-                state.inner.setExitRequested();
+            void execute(ZorkInstance instance) {
+                instance.state.setExitRequested();
             }
         });
     }
@@ -228,7 +322,7 @@ class SaveCommandParser implements CommandParser {
 
     @Override
     public void registerDirectCompletions(CompletionTrie trie) {
-        trie.insertAll("save", "save as ", "delete save", "load ");
+        trie.insertAll("save", "save as", "delete save", "load");
     }
 
     @Override
@@ -242,8 +336,8 @@ class SaveCommandParser implements CommandParser {
             var name = save_as_matcher.group(1);
             return Optional.of(new Command() {
                 @Override
-                void execute(Box<GameState> state) {
-                    SaveManager.saveState(name, state.inner);
+                void execute(ZorkInstance instance) {
+                    SaveManager.saveState(name, instance.state);
                 }
             });
         }
@@ -252,41 +346,39 @@ class SaveCommandParser implements CommandParser {
             var name = load_matcher.group(1);
             return Optional.of(new Command() {
                 @Override
-                void execute(Box<GameState> state) {
-                    var new_state = SaveManager.loadState(name);
-                    state.replace(new_state);
+                void execute(ZorkInstance instance) {
+                    instance.state = SaveManager.loadState(name);
                 }
             });
         }
         return switch (text.trim()) {
             case "save as" -> Optional.of(new Command() {
                 @Override
-                void execute(Box<GameState> state) {
-                    state.inner.controller.presentMessage("Pick a save file to overwrite, or enter the name of the save file to create");
+                void execute(ZorkInstance instance) {
+                    instance.state.controller.presentMessage("Pick a save file to overwrite, or enter the name of the save file to create");
                     var save_names = SaveManager.listSaveNames();
-                    var selected = state.inner.controller.presentTextSelectionListWithPrompt(save_names, "Create new save");
-                    SaveManager.saveState(selected, state.inner);
+                    var selected = instance.state.controller.presentTextSelectionListWithPrompt(save_names, "Create new save");
+                    SaveManager.saveState(selected, instance.state);
                 }
             });
             case "load" -> Optional.of(new Command() {
                 @Override
-                void execute(Box<GameState> state) {
-                    state.inner.controller.presentMessage("Pick a save file to load");
+                void execute(ZorkInstance instance) {
+                    instance.state.controller.presentMessage("Pick a save file to load");
                     var save_names = SaveManager.listSaveNames();
-                    var selected = state.inner.controller.presentSelectionList(save_names);
+                    var selected = instance.state.controller.presentSelectionList(save_names);
                     if (selected.isEmpty()) {
                         return;
                     }
-                    var new_state = SaveManager.loadState(selected.get());
-                    state.replace(new_state);
+                    instance.state = SaveManager.loadState(selected.get());
                 }
             });
             case "delete save" -> Optional.of(new Command() {
                 @Override
-                void execute(Box<GameState> state) {
-                    state.inner.controller.presentMessage("Pick a save file to delete");
+                void execute(ZorkInstance instance) {
+                    instance.state.controller.presentMessage("Pick a save file to delete");
                     var save_names = SaveManager.listSaveNames();
-                    var selected = state.inner.controller.presentSelectionList(save_names);
+                    var selected = instance.state.controller.presentSelectionList(save_names);
                     if (selected.isEmpty()) {
                         return;
                     }
@@ -297,8 +389,8 @@ class SaveCommandParser implements CommandParser {
             });
             case "save" -> Optional.of(new Command() {
                 @Override
-                void execute(Box<GameState> state) {
-                    SaveManager.saveState(state.inner.save_name, state.inner);
+                void execute(ZorkInstance instance) {
+                    SaveManager.saveState(instance.state.save_name, instance.state);
                 }
             });
             default -> Optional.empty();

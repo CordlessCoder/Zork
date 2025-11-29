@@ -80,7 +80,8 @@ public class TerminalViewController implements ViewController {
 
     @Override
     public void presentTextPrompt(String prompt) {
-        System.out.print(prompt + "\n> ");
+        System.out.println(prompt);
+        // System.out.print(">");
     }
 
     @Override

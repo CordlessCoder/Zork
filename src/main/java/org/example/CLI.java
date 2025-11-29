@@ -20,7 +20,6 @@ public class CLI {
             state = SaveManager.loadInitialState(selected).get();
         }
         ZorkInstance instance = new ZorkInstance(state);
-        System.out.println(instance);
         while (!terminal_view_controller.WasExitRequested()) {
             terminal_view_controller.presentTextPrompt("Please enter the action you want to perform:");
             var line = terminal_view_controller.consumeTextInput();

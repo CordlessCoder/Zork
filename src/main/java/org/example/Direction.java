@@ -25,9 +25,4 @@ public enum Direction {
         }
         return Optional.of(direction);
     }
-
-    @Override
-    public String toString() {
-        return super.toString();
-    }
 }
