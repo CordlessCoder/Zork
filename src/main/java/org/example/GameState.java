@@ -7,18 +7,20 @@ import java.util.HashMap;
 import java.util.List;
 
 public class GameState {
-    @JsonProperty("rooms")
-    private HashMap<String, Room> rooms;
-    @JsonProperty("items")
-    private HashMap<String, Item> items;
     @JsonIgnore
     public boolean isExitRequested = false;
-    @JsonProperty("player")
-    private Player player;
     @JsonIgnore
     public ViewController controller;
     @JsonIgnore
     public String save_name;
+    @JsonIgnore
+    public MapLayout layout;
+    @JsonProperty("rooms")
+    private HashMap<String, Room> rooms;
+    @JsonProperty("items")
+    private HashMap<String, Item> items;
+    @JsonProperty("player")
+    private Player player;
 
     private GameState() {
     }
@@ -29,34 +31,18 @@ public class GameState {
         return rooms.get(room_name);
     }
 
-    public void fixupRoomNames() {
+    public void roomUpdateHook() {
         for (var room : rooms.entrySet()) {
             String name = room.getKey();
             room.getValue().setName(name);
         }
+        layout = new MapLayout(rooms);
     }
 
     public List<String> autocomplete(String text) {
         return CommandRegistry.autocomplete(this, text);
     }
 
-
-//    public void play() {
-//        showWelcome();
-//
-//        try (var input = new Scanner(System.in)) {
-//            while (!isExitRequested) {
-//                var line = input.nextLine();
-//                var cmd = CommandRegistry.parse(line);
-//                if (cmd.isEmpty()) {
-//                    controller.presentUrgentMessage("Unknown command.");
-//                    continue;
-//                }
-//                cmd.get().execute(this);
-//            }
-//        }
-//        controller.presentMessage("Thank you for playing. Goodbye.");
-//    }
 
     private void showWelcome() {
         controller.presentMessage("Welcome to the University adventure!");
@@ -88,6 +74,16 @@ public class GameState {
     }
 
 
+    void mapMessage() {
+        controller.presentMessage("Map:");
+        for (int row_idx = 0; row_idx < layout.layout.getHeight();  row_idx++) {
+            var row = layout.layout.row(row_idx);
+            for (var col : row) {
+                controller.presentMessage("[" + col + "] ");
+            }
+        }
+    }
+
     void lookMessage() {
         controller.presentMessage("Your items: " + player.getItemString());
         controller.presentMessage(rooms.get(player.getCurrentRoomName()).getLongDescription());
@@ -118,13 +114,6 @@ public class GameState {
 
     @Override
     public String toString() {
-        return "Zork{" +
-                "rooms=" + rooms +
-                ", items=" + items +
-                ", isExitRequested=" + isExitRequested +
-                ", player=" + player +
-                ", controller=" + controller +
-                ", save_name='" + save_name + '\'' +
-                '}';
+        return "Zork{" + "rooms=" + rooms + ", items=" + items + ", isExitRequested=" + isExitRequested + ", player=" + player + ", controller=" + controller + ", save_name='" + save_name + '\'' + '}';
     }
 }

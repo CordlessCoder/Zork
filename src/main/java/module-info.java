@@ -7,4 +7,5 @@ module Zork {
     requires dev.dirs;
     requires javafx.fxml;
     requires tools.jackson.core;
+    requires org.controlsfx.controls;
 }

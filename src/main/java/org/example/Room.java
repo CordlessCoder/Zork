@@ -12,7 +12,7 @@ public class Room {
     @JsonProperty("description")
     private String description;
     @JsonProperty("paths")
-    private EnumMap<Direction, String> paths = new EnumMap<>(Direction.class);
+    EnumMap<Direction, String> paths = new EnumMap<>(Direction.class);
     @JsonIgnore
     private String name;
 

@@ -29,6 +29,7 @@ public class CommandRegistry {
     static {
         CommandRegistry.registerParser(new HelpCommandParser());
         CommandRegistry.registerParser(new LookCommandParser());
+        CommandRegistry.registerParser(new MapCommandParser());
         CommandRegistry.registerParser(new TakeItemCommandParser());
         CommandRegistry.registerParser(new DropItemCommandParser());
         CommandRegistry.registerParser(new GoCommandParser());
