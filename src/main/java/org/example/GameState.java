@@ -159,6 +159,7 @@ public class GameState {
 
     void setExitRequested() {
         this.isExitRequested = true;
+        this.controller.notifyOfCompletion();
     }
 
 

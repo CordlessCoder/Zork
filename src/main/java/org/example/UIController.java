@@ -7,13 +7,9 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ChoiceDialog;
-import javafx.scene.control.Label;
+import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
-import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import org.controlsfx.control.textfield.AutoCompletionBinding;
@@ -24,20 +20,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class UIController extends Application implements ViewController {
-    ZorkInstance instance = null;
-
-    // New state for ViewController implementation
-    private volatile boolean exitRequested = false;
-    private TextField commandPromptField = null;
-    private Pane mapPaneField = null;
-    private TextArea outputArea = null;
-    private final BlockingQueue<String> inputQueue = new LinkedBlockingQueue<>();
-    private Thread gameThread = null;
-    private final String INPUT_EXIT_SENTINEL = "__UI_EXIT__";
+    private BlockingQueue<String> inputQueue;
+    ZorkInstance instance;
+    private volatile boolean exitRequested;
+    private TextField commandPromptField;
+    private TextArea outputArea;
+    private Thread gameThread;
 
     static void main(String[] args) {
         launch();
@@ -45,24 +37,29 @@ public class UIController extends Application implements ViewController {
 
     @Override
     public void start(Stage stage) throws IOException {
+        // final BlockingQueue<String> _inputQueue = new LinkedBlockingQueue<>();
+        this.inputQueue = new LinkedBlockingQueue<>();
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getClassLoader().getResource("GameView.fxml")));
-        String javaVersion = System.getProperty("java.version");
-        String javafxVersion = System.getProperty("javafx.version");
-        Scene scene = new Scene(root, 640, 480);
+        Scene scene = new Scene(root);
 
-        // locate UI controls by id (set in FXML)
-        var mapPane = (Pane) scene.lookup("#textViewPane");
         this.commandPromptField = (TextField) scene.lookup("#textPrompt");
-        var executeButton = (javafx.scene.control.Button) scene.lookup("#executeButton");
-
-        this.outputArea = new TextArea();
+        var executeButton = (Button) scene.lookup("#executeButton");
+        this.outputArea = (TextArea) scene.lookup("#textView");
         this.outputArea.setEditable(false);
         this.outputArea.setWrapText(true);
-//        this.outputArea.setPrefWidth(mapPane.getPrefWidth() <= 0 ? 436 : mapPane.getPrefWidth());
-//        this.outputArea.setPrefHeight(mapPane.getPrefHeight() <= 0 ? 238 : mapPane.getPrefHeight());
-        mapPane.getChildren().add(outputArea);
 
-        this.mapPaneField = mapPane;
+        String[][] directions = {
+                {"northButton", "go north"},
+                {"southButton", "go south"},
+                {"eastButton", "go east"},
+                {"westButton", "go west"}
+        };
+        for (var direction : directions) {
+            var button = (Button) scene.lookup('#' + direction[0]);
+            button.setOnAction(event -> {
+                inputQueue.offer(direction[1]);
+            });
+        }
 
         Callback<AutoCompletionBinding.ISuggestionRequest, Collection<String>> suggestionProvider = request -> {
             if (this.instance == null) {
@@ -75,10 +72,9 @@ public class UIController extends Application implements ViewController {
         stage.setScene(scene);
         stage.show();
 
-        ( executeButton).setOnAction(evt -> submitInputFromPrompt());
+        (executeButton).setOnAction(evt -> submitInputFromPrompt());
         this.commandPromptField.setOnAction(evt -> submitInputFromPrompt());
 
-        // start background thread to run the interactive game loop (so UI thread remains responsive)
         this.gameThread = new Thread(() -> {
             try {
                 GameState state = null;
@@ -111,38 +107,16 @@ public class UIController extends Application implements ViewController {
                 presentErrorMessage("Internal UI thread error: " + e.getMessage());
             }
         }, "Zork-GameThread");
-        this.gameThread.setDaemon(true);
         this.gameThread.start();
+        stage.setOnCloseRequest(event -> notifyOfCompletion());
     }
 
     private void submitInputFromPrompt() {
         if (this.commandPromptField == null) return;
         var text = this.commandPromptField.getText();
-        // push to queue so background thread can consume
         if (text == null) text = "";
         this.commandPromptField.clear();
-        // best-effort offer (non-blocking)
         this.inputQueue.offer(text);
-    }
-
-    @FXML
-    private void leftButtonHandler(ActionEvent event) {
-        System.out.println("left");
-    }
-
-    @FXML
-    private void rightButtonHandler(ActionEvent event) {
-        System.out.println("right");
-    }
-
-    @FXML
-    private void upButtonHandler(ActionEvent event) {
-        System.out.println("up");
-    }
-
-    @FXML
-    private void downButtonHandler(ActionEvent event) {
-        System.out.println("down");
     }
 
     // helper to append to the output area (always call from background threads)
@@ -162,16 +136,13 @@ public class UIController extends Application implements ViewController {
     @Override
     public void notifyOfCompletion() {
         exitRequested = true;
-        // offer sentinel to unblock any waiting input consumers
-        inputQueue.offer(INPUT_EXIT_SENTINEL);
-        // try to interrupt game thread so it wakes if blocked elsewhere
-        if (gameThread != null) {
-            try {
-                gameThread.interrupt();
-            } catch (Exception ignored) {
-            }
+        // Unblock the game thread if it's waiting for input
+        inputQueue.offer("");
+        // Wake game thread if it's waiting on something else
+        try {
+            gameThread.interrupt();
+        } catch (Exception ignored) {
         }
-        // exit JavaFX application
         Platform.runLater(() -> {
             try {
                 Platform.exit();
@@ -186,7 +157,6 @@ public class UIController extends Application implements ViewController {
             presentMessage("(no options)");
             return Optional.empty();
         }
-        // display options in the output area
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < options.size(); i++) {
             sb.append((i + 1)).append(") ").append(options.get(i)).append("\n");
@@ -194,18 +164,11 @@ public class UIController extends Application implements ViewController {
         appendOutput(sb.toString());
         appendOutput("Choose an option (1-" + options.size() + "):\n");
 
-        // block until the user submits input
-        String line;
-        try {
-            line = inputQueue.take();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        var line = consumeTextInput();
+        if (line.isEmpty() || WasExitRequested()) {
             return Optional.empty();
         }
-        if (INPUT_EXIT_SENTINEL.equals(line) || WasExitRequested()) {
-            return Optional.empty();
-        }
-        var trimmed = line.trim();
+        var trimmed = line.get().trim();
         try {
             int idx = Integer.parseInt(trimmed);
             if (idx < 1 || idx > options.size()) {
@@ -252,12 +215,13 @@ public class UIController extends Application implements ViewController {
         String line;
         try {
             line = inputQueue.take();
+            System.err.println(line);
             appendOutput(line + "\n");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return Optional.empty();
         }
-        if (INPUT_EXIT_SENTINEL.equals(line) || WasExitRequested()) {
+        if (WasExitRequested()) {
             return Optional.empty();
         }
         return Optional.ofNullable(line);

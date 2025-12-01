@@ -42,7 +42,7 @@ public class MapLayout {
         return locations;
     }
 
-    // DFS over all rooms to find their relative locations
+    // DFS over the rooms to find their relative locations
     private void relativeLocationRoomVisitor(HashMap<String, RoomWithLocation> locations, int row, int column, String name) {
         var location = locations.get(name);
         if (location.visited) {
