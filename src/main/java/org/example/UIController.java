@@ -2,8 +2,6 @@ package org.example;
 
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
-import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -16,29 +14,27 @@ import org.controlsfx.control.textfield.AutoCompletionBinding;
 import org.controlsfx.control.textfield.TextFields;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class UIController extends Application implements ViewController {
     private BlockingQueue<String> inputQueue;
-    ZorkInstance instance;
+    volatile ZorkInstance instance;
     private volatile boolean exitRequested;
     private TextField commandPromptField;
     private TextArea outputArea;
+    private final EnumMap<Direction, Button> directionButtons = new EnumMap<>(Direction.class);
+    private final EnumMap<Direction, Boolean> savedButtonState = new EnumMap<>(Direction.class);
     private Thread gameThread;
 
     static void main(String[] args) {
-        launch();
+        launch(args);
     }
 
     @Override
     public void start(Stage stage) throws IOException {
-        // final BlockingQueue<String> _inputQueue = new LinkedBlockingQueue<>();
-        this.inputQueue = new LinkedBlockingQueue<>();
+        this.inputQueue = new ArrayBlockingQueue<>(32);
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getClassLoader().getResource("GameView.fxml")));
         Scene scene = new Scene(root);
 
@@ -48,17 +44,12 @@ public class UIController extends Application implements ViewController {
         this.outputArea.setEditable(false);
         this.outputArea.setWrapText(true);
 
-        String[][] directions = {
-                {"northButton", "go north"},
-                {"southButton", "go south"},
-                {"eastButton", "go east"},
-                {"westButton", "go west"}
-        };
-        for (var direction : directions) {
-            var button = (Button) scene.lookup('#' + direction[0]);
-            button.setOnAction(event -> {
-                inputQueue.offer(direction[1]);
-            });
+        for (Direction direction : Direction.values()) {
+            var direction_string = direction.name().toLowerCase();
+            var button = (Button) scene.lookup("#" + direction_string + "Button");
+            button.setOnAction(_ -> inputQueue.offer("go " + direction_string));
+            button.setDisable(true);
+            directionButtons.put(direction, button);
         }
 
         Callback<AutoCompletionBinding.ISuggestionRequest, Collection<String>> suggestionProvider = request -> {
@@ -72,8 +63,8 @@ public class UIController extends Application implements ViewController {
         stage.setScene(scene);
         stage.show();
 
-        (executeButton).setOnAction(evt -> submitInputFromPrompt());
-        this.commandPromptField.setOnAction(evt -> submitInputFromPrompt());
+        (executeButton).setOnAction(_ -> submitInputFromPrompt());
+        this.commandPromptField.setOnAction(_ -> submitInputFromPrompt());
 
         this.gameThread = new Thread(() -> {
             try {
@@ -81,7 +72,7 @@ public class UIController extends Application implements ViewController {
                 presentMessage("Welcome to Zork, pick a save file or create a new one");
                 var save_names = SaveManager.listSaveNames();
                 var selected = presentTextSelectionListWithPrompt(save_names, "enter the name of a save file to create");
-                // Intentionally compares equality of strings to check if the user selected one of the options in the list, or entered a new save name.
+                // Intentionally compares equality of strings to check if the user selected one of the options in the list or entered a new save name
                 for (var save_file_ref : save_names) {
                     if (!save_file_ref.equals(selected)) {
                         continue;
@@ -94,6 +85,15 @@ public class UIController extends Application implements ViewController {
                     state = SaveManager.loadInitialState(selected).get();
                 }
                 this.instance = new ZorkInstance(state);
+                this.instance.state.registerUpdateHook(game -> {
+                    var room_paths = game.getCurrentRoom().paths;
+                    Platform.runLater(() -> {
+                        for (var direction : Direction.values()) {
+                            directionButtons.get(direction).setDisable(!room_paths.containsKey(direction));
+                        }
+                    });
+                });
+                instance.state.notifyUpdateHooks();
                 while (!WasExitRequested()) {
                     presentTextPrompt("Please enter the action you want to perform:");
                     var line = consumeTextInput();
@@ -104,11 +104,11 @@ public class UIController extends Application implements ViewController {
                 }
             } catch (Exception e) {
                 // ensure UI shows unexpected errors
-                presentErrorMessage("Internal UI thread error: " + e.getMessage());
+                presentErrorMessage("Internal UI thread error: " + e.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
             }
         }, "Zork-GameThread");
         this.gameThread.start();
-        stage.setOnCloseRequest(event -> notifyOfCompletion());
+        stage.setOnCloseRequest(_ -> notifyOfCompletion());
     }
 
     private void submitInputFromPrompt() {
@@ -117,6 +117,23 @@ public class UIController extends Application implements ViewController {
         if (text == null) text = "";
         this.commandPromptField.clear();
         this.inputQueue.offer(text);
+    }
+
+    private void disableAndSaveMoveButtons() {
+        Platform.runLater(() -> {
+            for (var button : directionButtons.entrySet()) {
+                savedButtonState.put(button.getKey(), button.getValue().isDisabled());
+                button.getValue().setDisable(true);
+            }
+        });
+    }
+
+    private void restoreMoveButtons() {
+        Platform.runLater(() -> {
+            for (var button : directionButtons.entrySet()) {
+                button.getValue().setDisable(savedButtonState.get(button.getKey()));
+            }
+        });
     }
 
     // helper to append to the output area (always call from background threads)
@@ -161,10 +178,13 @@ public class UIController extends Application implements ViewController {
         for (int i = 0; i < options.size(); i++) {
             sb.append((i + 1)).append(") ").append(options.get(i)).append("\n");
         }
+        sb.append("Choose an option (1-").append(options.size()).append("):\n");
         appendOutput(sb.toString());
-        appendOutput("Choose an option (1-" + options.size() + "):\n");
 
+        disableAndSaveMoveButtons();
         var line = consumeTextInput();
+        restoreMoveButtons();
+
         if (line.isEmpty() || WasExitRequested()) {
             return Optional.empty();
         }
@@ -195,14 +215,17 @@ public class UIController extends Application implements ViewController {
         sb.append("\n> ");
         appendOutput(sb.toString());
 
+        disableAndSaveMoveButtons();
         var line = consumeTextInput();
+        restoreMoveButtons();
+
         if (line.isEmpty()) {
             return "";
         }
         var trimmed = line.get().trim();
         try {
             int idx = Integer.parseInt(trimmed);
-            if (idx >= 1 && idx <= options.size()) {
+            if (options != null && idx >= 1 && idx <= options.size()) {
                 return options.get(idx - 1);
             }
         } catch (NumberFormatException ignored) {
@@ -224,22 +247,19 @@ public class UIController extends Application implements ViewController {
         if (WasExitRequested()) {
             return Optional.empty();
         }
-        return Optional.ofNullable(line);
+        return Optional.of(line);
     }
 
     @Override
     public void presentTextPrompt(String prompt) {
-        if (commandPromptField != null) {
-            Platform.runLater(() -> {
-                try {
-                    commandPromptField.setPromptText(prompt);
-                    commandPromptField.requestFocus();
-                } catch (Exception ignored) {
-                }
-            });
-        } else {
-            appendOutput(prompt);
-        }
+        Platform.runLater(() -> {
+            try {
+                commandPromptField.setPromptText(prompt);
+                commandPromptField.requestFocus();
+            } catch (Exception ignored) {
+            }
+        });
+        appendOutput(prompt);
     }
 
     @Override

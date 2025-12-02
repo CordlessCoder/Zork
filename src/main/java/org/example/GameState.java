@@ -3,11 +3,15 @@ package org.example;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public class GameState {
+    @JsonIgnore
+    private final ArrayList<Consumer<GameState>> updateHooks = new ArrayList<>();
     @JsonIgnore
     public boolean isExitRequested = false;
     @JsonIgnore
@@ -27,17 +31,30 @@ public class GameState {
     }
 
 
+    /// Registers a function that shall be called whenever the game state is modified
+    public void registerUpdateHook(Consumer<GameState> hook) {
+        updateHooks.add(hook);
+    }
+
+    public void notifyUpdateHooks() {
+        for (var hook : updateHooks) {
+            hook.accept(this);
+        }
+    }
+
     public Room getCurrentRoom() {
         var room_name = player.getCurrentRoomName();
         return rooms.get(room_name);
     }
 
+    ///  This method should be called after updating the room structure.
     public void roomUpdateHook() {
         for (var room : rooms.entrySet()) {
             String name = room.getKey();
             room.getValue().setId(name);
         }
         layout = new MapLayout(rooms);
+        notifyUpdateHooks();
     }
 
     public List<String> autocomplete(String text) {
@@ -63,6 +80,7 @@ public class GameState {
             return;
         }
         player.addItem(item_name);
+        notifyUpdateHooks();
     }
 
     void dropItem(String item_name) {
@@ -72,6 +90,7 @@ public class GameState {
         }
         player.removeItem(item_name);
         getCurrentRoom().addItem(item_name);
+        notifyUpdateHooks();
     }
 
 
@@ -154,6 +173,7 @@ public class GameState {
             return;
         }
         player.setCurrentRoomName(nextRoom.getId());
+        notifyUpdateHooks();
         lookMessage();
     }
 
