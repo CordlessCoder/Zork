@@ -3,10 +3,7 @@ package org.example;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class GameState {
@@ -60,7 +57,6 @@ public class GameState {
     public List<String> autocomplete(String text) {
         return CommandRegistry.autocomplete(this, text);
     }
-
 
     private void showWelcome() {
         controller.presentMessage("Welcome to the University adventure!");

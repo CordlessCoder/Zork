@@ -17,19 +17,37 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.stream.IntStream;
 
 public class UIController extends Application implements ViewController {
-    private BlockingQueue<String> inputQueue;
+    private final EnumMap<Direction, Button> directionButtons = new EnumMap<>(Direction.class);
+    private final EnumMap<Direction, Boolean> savedButtonState = new EnumMap<>(Direction.class);
     volatile ZorkInstance instance;
+    private BlockingQueue<String> inputQueue;
     private volatile boolean exitRequested;
     private TextField commandPromptField;
     private TextArea outputArea;
-    private final EnumMap<Direction, Button> directionButtons = new EnumMap<>(Direction.class);
-    private final EnumMap<Direction, Boolean> savedButtonState = new EnumMap<>(Direction.class);
     private Thread gameThread;
+    private List<String> autoCompleteOverrides = null;
 
     static void main(String[] args) {
         launch(args);
+    }
+
+    public void setAutoCompleteOverrides(List<String> autoCompleteOverrides) {
+        Platform.runLater(() -> this.autoCompleteOverrides = autoCompleteOverrides);
+    }
+
+    public void removeAutoCompleteOverrides() {
+        Platform.runLater(() -> this.autoCompleteOverrides = null);
+    }
+
+    public List<String> autocomplete(String text) {
+        return Optional.ofNullable(autoCompleteOverrides)
+                // Use autoCompleteOverrides if available
+                .map(strings -> strings.stream().filter(suggestion -> suggestion.startsWith(text)).toList())
+                // Fall back to command autocompletion
+                .orElseGet(() -> Optional.ofNullable(this.instance).map(instance -> instance.state.autocomplete(text)).orElse(List.of()));
     }
 
     @Override
@@ -52,12 +70,7 @@ public class UIController extends Application implements ViewController {
             directionButtons.put(direction, button);
         }
 
-        Callback<AutoCompletionBinding.ISuggestionRequest, Collection<String>> suggestionProvider = request -> {
-            if (this.instance == null) {
-                return List.of();
-            }
-            return this.instance.state.autocomplete(request.getUserText());
-        };
+        Callback<AutoCompletionBinding.ISuggestionRequest, Collection<String>> suggestionProvider = request -> this.autocomplete(request.getUserText());
         TextFields.bindAutoCompletion(this.commandPromptField, suggestionProvider);
 
         stage.setScene(scene);
@@ -95,7 +108,7 @@ public class UIController extends Application implements ViewController {
                 });
                 instance.state.notifyUpdateHooks();
                 while (!WasExitRequested()) {
-                    presentTextPrompt("Please enter the action you want to perform:");
+                    presentTextPrompt("Please enter the action you want to perform\n> ");
                     var line = consumeTextInput();
                     if (line.isEmpty()) {
                         return;
@@ -182,8 +195,11 @@ public class UIController extends Application implements ViewController {
         appendOutput(sb.toString());
 
         disableAndSaveMoveButtons();
+        setAutoCompleteOverrides(IntStream.range(1, options.size() + 1).mapToObj(String::valueOf).toList());
         var line = consumeTextInput();
         restoreMoveButtons();
+        removeAutoCompleteOverrides();
+
 
         if (line.isEmpty() || WasExitRequested()) {
             return Optional.empty();
@@ -216,8 +232,10 @@ public class UIController extends Application implements ViewController {
         appendOutput(sb.toString());
 
         disableAndSaveMoveButtons();
+        setAutoCompleteOverrides(IntStream.range(1, Optional.ofNullable(options).map(List::size).orElse(0) + 1).mapToObj(String::valueOf).toList());
         var line = consumeTextInput();
         restoreMoveButtons();
+        removeAutoCompleteOverrides();
 
         if (line.isEmpty()) {
             return "";
@@ -238,7 +256,6 @@ public class UIController extends Application implements ViewController {
         String line;
         try {
             line = inputQueue.take();
-            System.err.println(line);
             appendOutput(line + "\n");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -277,4 +294,8 @@ public class UIController extends Application implements ViewController {
         appendOutput("ERROR: " + message + "\n");
     }
 
+    @Override
+    public String toString() {
+        return "UIController{" + "directionButtons=" + directionButtons + ", savedButtonState=" + savedButtonState + ", instance=" + instance + ", inputQueue=" + inputQueue + ", exitRequested=" + exitRequested + ", commandPromptField=" + commandPromptField + ", outputArea=" + outputArea + ", gameThread=" + gameThread + ", autoCompleteOverrides=" + autoCompleteOverrides + '}';
+    }
 }

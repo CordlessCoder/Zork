@@ -23,7 +23,11 @@ public class ZorkInstance {
             }
             return;
         }
-        cmd.get().execute(this);
+        try {
+            cmd.get().execute(this);
+        } catch (CommandException e) {
+            controller.presentErrorMessage("Command failed: " + e.getMessage());
+        }
         if (this.state.isExitRequested) {
             controller.notifyOfCompletion();
         }

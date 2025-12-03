@@ -1,11 +1,14 @@
 package org.example;
 
+import tools.jackson.core.JacksonException;
+
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public abstract class Command {
-    abstract void execute(ZorkInstance instance);
+    abstract void execute(ZorkInstance instance) throws CommandException;
 }
 
 class ItemAutocompleteHelper {
@@ -317,16 +320,40 @@ class ExitCommandParser implements CommandParser {
 }
 
 class SaveCommandParser implements CommandParser {
-    private final static Pattern SAVE_AS_PATTERN = Pattern.compile("save as ([a-zA-Z1-9_\\-])");
-    private final static Pattern LOAD_PATTERN = Pattern.compile("load ([a-zA-Z1-9_\\-])");
+    private final static Pattern SAVE_AS_PATTERN = Pattern.compile("^save as ([a-zA-Z1-9_\\-]*)$");
+    private final static Pattern LOAD_PATTERN = Pattern.compile("^load ([a-zA-Z1-9_\\-]*)$");
+    private final static Pattern DELETE_SAVE_PATTERN = Pattern.compile("^delete save ([a-zA-Z1-9_\\-]*)$");
 
     @Override
     public void registerDirectCompletions(CompletionTrie trie) {
         trie.insertAll("save", "save as", "delete save", "load");
     }
 
+    private void autoCompleteSaveNames(ArrayList<String> output, String text, Matcher matcher) {
+        var save_names = SaveManager.listSaveNames();
+        var before_name = text.substring(0, matcher.start(1));
+        var name = matcher.group(1);
+        for (var save_name : save_names) {
+            if (!save_name.startsWith(name)) {
+                continue;
+            }
+            if (save_name.length() == name.length()) {
+                continue;
+            }
+            output.add(before_name + save_name);
+        }
+    }
+
     @Override
     public void autoComplete(GameState context, ArrayList<String> output, String text) {
+        var matcher = LOAD_PATTERN.matcher(text);
+        if (matcher.matches()) {
+            autoCompleteSaveNames(output, text, matcher);
+        }
+        matcher = DELETE_SAVE_PATTERN.matcher(text);
+        if (matcher.matches()) {
+            autoCompleteSaveNames(output, text, matcher);
+        }
     }
 
     @Override
@@ -346,8 +373,23 @@ class SaveCommandParser implements CommandParser {
             var name = load_matcher.group(1);
             return Optional.of(new Command() {
                 @Override
+                void execute(ZorkInstance instance) throws CommandException {
+                    try {
+                        instance.state = SaveManager.loadState(name);
+                    } catch (JacksonException e) {
+                        throw new CommandException("Failed to load save file: " + name);
+                    }
+                }
+            });
+        }
+        var delete_matcher = DELETE_SAVE_PATTERN.matcher(text);
+        if (delete_matcher.matches()) {
+            var name = delete_matcher.group(1);
+            return Optional.of(new Command() {
+                @Override
                 void execute(ZorkInstance instance) {
-                    instance.state = SaveManager.loadState(name);
+                    var save_file_path = SaveManager.pathForSaveName(name);
+                    var _ = save_file_path.toFile().delete();
                 }
             });
         }
