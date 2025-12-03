@@ -47,16 +47,6 @@ public class Player {
         return items.contains(item_name);
     }
 
-//    public void move(String direction) {
-//        String nextRoom = currentRoom.getExit(direction);
-//        if (nextRoom != null) {
-//            currentRoom = nextRoom;
-//            System.out.println("You moved to: " + currentRoom.getDescription());
-//        } else {
-//            System.out.println("You can't go that way!");
-//        }
-//    }
-
     @Override
     public String toString() {
         return "Player{" + "name='" + name + '\'' + ", currentRoom='" + currentRoomName + '\'' + '}';

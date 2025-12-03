@@ -15,15 +15,13 @@ import org.controlsfx.control.textfield.TextFields;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.stream.IntStream;
 
 public class UIController extends Application implements ViewController {
     private final EnumMap<Direction, Button> directionButtons = new EnumMap<>(Direction.class);
     private final EnumMap<Direction, Boolean> savedButtonState = new EnumMap<>(Direction.class);
     volatile ZorkInstance instance;
-    private BlockingQueue<String> inputQueue;
+    private BlockingArrayListDeque<String> inputQueue;
     private volatile boolean exitRequested;
     private TextField commandPromptField;
     private TextArea outputArea;
@@ -52,7 +50,7 @@ public class UIController extends Application implements ViewController {
 
     @Override
     public void start(Stage stage) throws IOException {
-        this.inputQueue = new ArrayBlockingQueue<>(32);
+        this.inputQueue = new BlockingArrayListDeque<>(32);
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getClassLoader().getResource("GameView.fxml")));
         Scene scene = new Scene(root);
 
@@ -65,7 +63,7 @@ public class UIController extends Application implements ViewController {
         for (Direction direction : Direction.values()) {
             var direction_string = direction.name().toLowerCase();
             var button = (Button) scene.lookup("#" + direction_string + "Button");
-            button.setOnAction(_ -> inputQueue.offer("go " + direction_string));
+            button.setOnAction(_ -> inputQueue.try_push_front("go " + direction_string));
             button.setDisable(true);
             directionButtons.put(direction, button);
         }
@@ -81,23 +79,11 @@ public class UIController extends Application implements ViewController {
 
         this.gameThread = new Thread(() -> {
             try {
-                GameState state = null;
-                presentMessage("Welcome to Zork, pick a save file or create a new one");
-                var save_names = SaveManager.listSaveNames();
-                var selected = presentTextSelectionListWithPrompt(save_names, "enter the name of a save file to create");
-                // Intentionally compares equality of strings to check if the user selected one of the options in the list or entered a new save name
-                for (var save_file_ref : save_names) {
-                    if (!save_file_ref.equals(selected)) {
-                        continue;
-                    }
-                    state = SaveManager.loadState(selected);
-                    break;
+                var maybe_instance = ZorkInstance.loadOrCreateNew(this);
+                if (maybe_instance.isEmpty()) {
+                    return;
                 }
-                if (state == null) {
-                    // Recovering from an error where the initial_state.json, an internal file is missing, is impossible
-                    state = SaveManager.loadInitialState(selected).get();
-                }
-                this.instance = new ZorkInstance(state);
+                this.instance = maybe_instance.get();
                 this.instance.state.registerUpdateHook(game -> {
                     var room_paths = game.getCurrentRoom().paths;
                     Platform.runLater(() -> {
@@ -129,7 +115,7 @@ public class UIController extends Application implements ViewController {
         var text = this.commandPromptField.getText();
         if (text == null) text = "";
         this.commandPromptField.clear();
-        this.inputQueue.offer(text);
+        this.inputQueue.try_push_front(text);
     }
 
     private void disableAndSaveMoveButtons() {
@@ -149,7 +135,6 @@ public class UIController extends Application implements ViewController {
         });
     }
 
-    // helper to append to the output area (always call from background threads)
     private void appendOutput(String text) {
         Platform.runLater(() -> {
             outputArea.appendText(text);
@@ -167,9 +152,9 @@ public class UIController extends Application implements ViewController {
     public void notifyOfCompletion() {
         exitRequested = true;
         // Unblock the game thread if it's waiting for input
-        inputQueue.offer("");
-        // Wake game thread if it's waiting on something else
+        inputQueue.try_push_front("");
         try {
+            // Wake game thread if it's waiting on something else
             gameThread.interrupt();
         } catch (Exception ignored) {
         }
@@ -255,7 +240,7 @@ public class UIController extends Application implements ViewController {
     public Optional<String> consumeTextInput() {
         String line;
         try {
-            line = inputQueue.take();
+            line = inputQueue.pop_back();
             appendOutput(line + "\n");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

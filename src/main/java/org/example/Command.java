@@ -14,9 +14,10 @@ public abstract class Command {
 class ItemAutocompleteHelper {
     public static void autoCompleteItemsInRoom(GameState context, ArrayList<String> output, String text, String before_name) {
         var room = context.getCurrentRoom();
+        text = text.toLowerCase();
         for (var item : room.items) {
             var name = item.toLowerCase();
-            if (!name.startsWith(text.toLowerCase())) {
+            if (!name.startsWith(text)) {
                 continue;
             }
             if (name.length() == text.length()) {
@@ -27,9 +28,10 @@ class ItemAutocompleteHelper {
     }
 
     public static void autoCompleteHeldItems(GameState context, ArrayList<String> output, String text, String before_name) {
+        text = text.toLowerCase();
         for (var item : context.player.items) {
             var name = item.toLowerCase();
-            if (!name.startsWith(text.toLowerCase())) {
+            if (!name.startsWith(text)) {
                 continue;
             }
             if (name.length() == text.length()) {

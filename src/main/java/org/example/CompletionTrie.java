@@ -15,7 +15,7 @@ public class CompletionTrie {
 
     void insertAll(String... words) {
         for (var word : words) {
-            root.put(new StringCharacterIterator(word));
+            this.insert(word);
         }
     }
 

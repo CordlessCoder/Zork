@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.Set;
 
 public class Room {
     @JsonProperty("items")
