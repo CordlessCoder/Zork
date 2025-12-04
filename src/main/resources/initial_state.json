@@ -80,9 +80,5 @@
     }
   },
   "inert_items": {
-    "test_item": {
-      "description": "a test item",
-      "name": "TEST"
-    }
   }
 }

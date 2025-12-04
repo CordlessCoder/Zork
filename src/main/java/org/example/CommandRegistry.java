@@ -16,6 +16,7 @@ interface CommandParser {
     Optional<Command> parse(String text);
 
     void autoComplete(GameState context, ArrayList<String> output, String text);
+
     void registerDirectCompletions(CompletionTrie trie);
 
     String getName();

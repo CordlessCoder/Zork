@@ -34,6 +34,7 @@ public class SaveManager {
         var saves_path = getSaveDirectory();
         return Path.of(saves_path.toString(), name + ".json");
     }
+
     public static GameState loadState(String name) throws JacksonException {
         var save_file_path = pathForSaveName(name);
         var game = new ObjectMapper().readValue(save_file_path, GameState.class);

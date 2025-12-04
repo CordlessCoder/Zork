@@ -14,24 +14,19 @@ enum PizzaItemState {
 
 public class TypedItems {
     @JsonProperty("keys")
-    final
-    Keys keys = new Keys();
+    final Keys keys = new Keys();
 
     @JsonProperty("computer")
-    final
-    Computer computer = new Computer();
+    final Computer computer = new Computer();
 
     @JsonProperty("oven")
-    final
-    Oven oven = new Oven();
+    final Oven oven = new Oven();
 
     @JsonProperty("pizza")
-    final
-    Pizza pizza = new Pizza();
+    final Pizza pizza = new Pizza();
 
     @JsonProperty("mold")
-    final
-    BlackMold mold = new BlackMold();
+    final BlackMold mold = new BlackMold();
 
     private TypedItems() {
     }

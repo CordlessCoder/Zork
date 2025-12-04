@@ -13,6 +13,7 @@ public abstract class Command {
 
 class ItemAutocompleteHelper {
     public static final String NAME_REGEX = "([a-zA-Z1-9_ ]*)";
+
     public static void autoCompleteItemsInRoom(GameState context, ArrayList<String> output, String text, String before_name) {
         var room = context.getCurrentRoom();
         text = text.toLowerCase();
@@ -45,7 +46,7 @@ class ItemAutocompleteHelper {
 
 
 class TakeItemCommandParser implements CommandParser {
-    private static final Pattern COMMAND_PATTERN = Pattern.compile("^(?:take|pick up|grab)(?: the)? "+ ItemAutocompleteHelper.NAME_REGEX +"$");
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("^(?:take|pick up|grab)(?: the)? " + ItemAutocompleteHelper.NAME_REGEX + "$");
     private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^(?:take|pick up|grab)", COMMAND_PATTERN, "Take what?", match -> {
         var item = match.group(1);
         return Optional.of(new Command() {
@@ -98,7 +99,7 @@ class TakeItemCommandParser implements CommandParser {
 }
 
 class DropItemCommandParser implements CommandParser {
-    private static final Pattern COMMAND_PATTERN = Pattern.compile("^drop(?: the)? "+ItemAutocompleteHelper.NAME_REGEX+"$");
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("^drop(?: the)? " + ItemAutocompleteHelper.NAME_REGEX + "$");
     private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^drop", COMMAND_PATTERN, "Drop what?", match -> {
         var item = match.group(1);
         return Optional.of(new Command() {
@@ -151,7 +152,7 @@ class DropItemCommandParser implements CommandParser {
 }
 
 class GoCommandParser implements CommandParser {
-    private static final Pattern COMMAND_PATTERN  = Pattern.compile("^(?:go|move)(?: to(?: the)?)? "+ItemAutocompleteHelper.NAME_REGEX+"$");
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("^(?:go|move)(?: to(?: the)?)? " + ItemAutocompleteHelper.NAME_REGEX + "$");
     private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^(?:go|move)", COMMAND_PATTERN, "Go where?", match -> {
         var place = match.group(1);
         return Optional.of(new Command() {
@@ -341,9 +342,9 @@ class ExitCommandParser implements CommandParser {
 }
 
 class SaveCommandParser implements CommandParser {
-    private final static Pattern SAVE_AS_PATTERN = Pattern.compile("^save as "+ItemAutocompleteHelper.NAME_REGEX+"$");
-    private final static Pattern LOAD_PATTERN = Pattern.compile("^load "+ItemAutocompleteHelper.NAME_REGEX+"$");
-    private final static Pattern DELETE_SAVE_PATTERN = Pattern.compile("^delete save "+ItemAutocompleteHelper.NAME_REGEX+"$");
+    private final static Pattern SAVE_AS_PATTERN = Pattern.compile("^save as " + ItemAutocompleteHelper.NAME_REGEX + "$");
+    private final static Pattern LOAD_PATTERN = Pattern.compile("^load " + ItemAutocompleteHelper.NAME_REGEX + "$");
+    private final static Pattern DELETE_SAVE_PATTERN = Pattern.compile("^delete save " + ItemAutocompleteHelper.NAME_REGEX + "$");
 
     @Override
     public void registerDirectCompletions(CompletionTrie trie) {
@@ -470,8 +471,9 @@ class SaveCommandParser implements CommandParser {
         return "Pick up an item";
     }
 }
+
 class UseItemCommandParser implements CommandParser {
-    private static final Pattern COMMAND_PATTERN = Pattern.compile("^use(?: the)? "+ItemAutocompleteHelper.NAME_REGEX+"$");
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("^use(?: the)? " + ItemAutocompleteHelper.NAME_REGEX + "$");
     private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^use", COMMAND_PATTERN, "Use what?", match -> {
         var item = match.group(1);
         return Optional.of(new Command() {

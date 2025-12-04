@@ -120,7 +120,6 @@ public class GameState {
     }
 
 
-
     void mapMessage() {
         StringBuilder out = new StringBuilder();
         out.append("Map:\n");

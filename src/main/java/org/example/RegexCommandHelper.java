@@ -40,7 +40,7 @@ public class RegexCommandHelper<R> {
         return complete_callback.apply(complete_matcher);
     }
 
-    public static void addIfStartsWith(ArrayList<String> output, String prefix, String ...matchCandidates) {
+    public static void addIfStartsWith(ArrayList<String> output, String prefix, String... matchCandidates) {
         for (var candidate : matchCandidates) {
             if (!candidate.startsWith(prefix)) {
                 continue;

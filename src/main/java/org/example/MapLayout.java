@@ -12,7 +12,7 @@ public class MapLayout {
             dimensions[0] = Math.max(dimensions[0], location.row + 1);
             dimensions[1] = Math.max(dimensions[1], location.column + 1);
         });
-        this.layout = new Matrix<>(dimensions[1], dimensions[0] );
+        this.layout = new Matrix<>(dimensions[1], dimensions[0]);
         locations.forEach((name, location) -> {
             this.layout.set(location.row, location.column, location.room);
         });

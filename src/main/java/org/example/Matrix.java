@@ -73,6 +73,7 @@ public class Matrix<T> implements Iterable<MatrixElement<T>> {
     public Stream<MatrixElement<T>> stream() {
         return java.util.stream.StreamSupport.stream(this.spliterator(), false);
     }
+
     public Stream<T> streamVal() {
         return java.util.stream.StreamSupport.stream(this.spliterator(), false).map(v -> v.value);
     }
