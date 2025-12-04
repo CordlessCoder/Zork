@@ -19,6 +19,7 @@ public class TypedRooms {
 }
 
 class Bathroom extends Room {
+    @JsonProperty("entered_count")
     int enteredCount = 0;
 
     @Override
@@ -36,15 +37,17 @@ class Bathroom extends Room {
 }
 
 class Outdoors extends Room {
-    private boolean realizedTheresNoKey = false;
+    @JsonProperty("realized_there_is_no_key")
+    private boolean realizedThereIsNoKey = false;
+    @JsonProperty("locked")
     boolean locked = true;
 
     @Override
     public void onEnter(GameState context) {
         if (!context.player.hasItem("keys")) {
-            if (!realizedTheresNoKey) {
+            if (!realizedThereIsNoKey) {
                 context.controller.presentUrgentMessage("You realize you forgot the keys!");
-                realizedTheresNoKey = true;
+                realizedThereIsNoKey = true;
                 return;
             }
             context.controller.presentUrgentMessage("You still don't have the keys!");
@@ -54,7 +57,7 @@ class Outdoors extends Room {
             context.controller.presentUrgentMessage("You have the key, but the door is locked!");
             return;
         }
-        if (!context.player.hasItem("pizza")) {
+        if (context.typed_items.oven.status == PizzaStatus.Ready) {
             context.controller.presentUrgentMessage("You realize you forgot the pizza!");
             context.controller.presentUrgentMessage("You notice a faint burnt smell.");
             context.typed_items.oven.status = PizzaStatus.Burnt;

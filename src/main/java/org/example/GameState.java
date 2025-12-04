@@ -3,10 +3,7 @@ package org.example;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
 
 // All state that requires overridden methods to work(items, rooms) is stored in a Typed* class, which is
@@ -69,6 +66,18 @@ public class GameState {
         notifyUpdateHooks();
     }
 
+    public Optional<Item> lookupItem(String name) {
+        return Optional.ofNullable(loaded_items.get(name)).or(() -> {
+            var name_lowercase = name.toLowerCase();
+            for (var item : loaded_items.values()) {
+                if (item.getName().toLowerCase().equals(name_lowercase)) {
+                    return Optional.of(item);
+                }
+            }
+            return Optional.empty();
+        });
+    }
+
     ///  This method should be called after updating the item structure.
     public void itemUpdateHook() {
         loaded_items.putAll(typed_items.toItemMap());
@@ -91,16 +100,20 @@ public class GameState {
     }
 
     void useItem(String item_name) {
-        if (!player.hasItem(item_name)) {
+        var maybe_item = lookupItem(item_name);
+        if (maybe_item.isEmpty()) {
+            controller.presentUrgentMessage("What's a \"" + item_name + "\"?");
+            return;
+        }
+        var item = maybe_item.get();
+        if (!player.hasItem(item.getId())) {
             if (getCurrentRoom().items.contains(item_name)) {
-                var item = loaded_items.get(item_name);
                 item.useInRoom(this);
                 return;
             };
             controller.presentUrgentMessage("You don't have this!");
             return;
         }
-        var item = loaded_items.get(item_name);
         item.useInInventory(this);
     }
 
@@ -158,8 +171,8 @@ public class GameState {
     }
 
     void lookMessage() {
-        controller.presentMessage("Your items: " + player.getItemString());
-        controller.presentMessage(loaded_rooms.get(player.getCurrentRoomId()).getLongDescription());
+        controller.presentMessage("Your items: " + player.getItemString(this));
+        controller.presentMessage(loaded_rooms.get(player.getCurrentRoomId()).getLongDescription(this));
     }
 
     void goTo(String place) {

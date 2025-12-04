@@ -6,7 +6,7 @@ import java.util.Scanner;
 
 public class TerminalViewController implements ViewController {
     private final Scanner scanner = new Scanner(System.in);
-    private volatile boolean exitRequested = false;
+    volatile boolean exitRequested = false;
 
     @Override
     public boolean WasExitRequested() {

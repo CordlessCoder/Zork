@@ -16,10 +16,10 @@ public class Player {
         return name;
     }
 
-    public String getItemString() {
+    public String getItemString(GameState context) {
         StringBuilder sb = new StringBuilder();
         for (String item : items) {
-            sb.append(item).append(" ");
+            sb.append(context.loaded_items.get(item).getName()).append(" ");
         }
         return sb.toString().trim();
     }

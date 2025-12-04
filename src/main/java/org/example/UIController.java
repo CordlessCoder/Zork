@@ -23,6 +23,7 @@ public class UIController extends Application implements ViewController {
     volatile ZorkInstance instance;
     private BlockingArrayListDeque<String> inputQueue;
     private volatile boolean exitRequested;
+    private boolean gameExited = false;
     private TextField commandPromptField;
     private TextArea outputArea;
     private Thread gameThread;
@@ -78,36 +79,47 @@ public class UIController extends Application implements ViewController {
         this.commandPromptField.setOnAction(_ -> submitInputFromPrompt());
 
         this.gameThread = new Thread(() -> {
-            try {
-                var maybe_instance = ZorkInstance.loadOrCreateNew(this);
-                if (maybe_instance.isEmpty()) {
-                    return;
-                }
-                this.instance = maybe_instance.get();
-                this.instance.state.registerUpdateHook(game -> {
-                    var room_paths = game.getCurrentRoom().paths;
-                    Platform.runLater(() -> {
-                        for (var direction : Direction.values()) {
-                            directionButtons.get(direction).setDisable(!room_paths.containsKey(direction));
-                        }
-                    });
-                });
-                instance.state.notifyUpdateHooks();
-                while (!WasExitRequested()) {
-                    presentTextPrompt("Please enter the action you want to perform\n> ");
-                    var line = consumeTextInput();
-                    if (line.isEmpty()) {
+            while (true) {
+                try {
+                    var maybe_instance = ZorkInstance.loadOrCreateNew(this);
+                    if (maybe_instance.isEmpty()) {
                         return;
                     }
-                    instance.advanceGame(this, line.get());
+                    this.instance = maybe_instance.get();
+                    this.instance.state.registerUpdateHook(game -> {
+                        var room_paths = game.getCurrentRoom().paths;
+                        Platform.runLater(() -> {
+                            for (var direction : Direction.values()) {
+                                directionButtons.get(direction).setDisable(!room_paths.containsKey(direction));
+                            }
+                        });
+                    });
+                    instance.state.notifyUpdateHooks();
+                    while (!WasExitRequested()) {
+                        presentTextPrompt("Please enter the action you want to perform\n> ");
+                        var line = consumeTextInput();
+                        if (line.isEmpty()) {
+                            return;
+                        }
+                        instance.advanceGame(this, line.get());
+                    }
+                    if (!this.exitRequested) {
+                        this.gameExited = false;
+                        presentTextPrompt("Would you like to play again? (y/n)\n>");
+                        var answer = consumeTextInput();
+                        if (answer.isEmpty() || !answer.get().toLowerCase().startsWith("y")) {
+                            break;
+                        }
+                    }
+                } catch (Exception e) {
+                    // ensure UI shows unexpected errors
+                    presentErrorMessage("Internal UI thread error: " + e.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
                 }
-            } catch (Exception e) {
-                // ensure UI shows unexpected errors
-                presentErrorMessage("Internal UI thread error: " + e.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
             }
+            shutdownThreads();
         }, "Zork-GameThread");
         this.gameThread.start();
-        stage.setOnCloseRequest(_ -> notifyOfCompletion());
+        stage.setOnCloseRequest(_ -> shutdownThreads());
     }
 
     private void submitInputFromPrompt() {
@@ -145,11 +157,15 @@ public class UIController extends Application implements ViewController {
 
     @Override
     public boolean WasExitRequested() {
-        return exitRequested;
+        return gameExited || exitRequested;
     }
 
     @Override
     public void notifyOfCompletion() {
+        gameExited = true;
+    }
+
+    public void shutdownThreads() {
         exitRequested = true;
         // Unblock the game thread if it's waiting for input
         inputQueue.try_push_front("");

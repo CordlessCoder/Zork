@@ -38,7 +38,8 @@
     },
     "pizza": {
       "description": "a pizza",
-      "name": "Pizza"
+      "name": "Pizza",
+      "state": "Good"
     },
     "mold": {
       "description": "it's mold",

@@ -12,6 +12,7 @@ public abstract class Command {
 }
 
 class ItemAutocompleteHelper {
+    public static final String NAME_REGEX = "([a-zA-Z1-9_ ]*)";
     public static void autoCompleteItemsInRoom(GameState context, ArrayList<String> output, String text, String before_name) {
         var room = context.getCurrentRoom();
         text = text.toLowerCase();
@@ -44,18 +45,22 @@ class ItemAutocompleteHelper {
 
 
 class TakeItemCommandParser implements CommandParser {
-    private static final Pattern COMMAND_PATTERN = Pattern.compile("^(?:take|pick up|grab)(?: the)? ([a-zA-Z_]*)$");
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("^(?:take|pick up|grab)(?: the)? "+ ItemAutocompleteHelper.NAME_REGEX +"$");
     private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^(?:take|pick up|grab)", COMMAND_PATTERN, "Take what?", match -> {
         var item = match.group(1);
         return Optional.of(new Command() {
             @Override
             void execute(ZorkInstance instance) {
-                var maybe_item = instance.state.loaded_items.get(item);
-                if (maybe_item == null) {
-                    instance.state.controller.presentMessage("What's a \"" + item + "\"?");
+                var maybe_item = instance.state.lookupItem(item);
+                if (maybe_item.isEmpty()) {
+                    instance.state.controller.presentUrgentMessage("What's a \"" + item + "\"?");
                     return;
                 }
-                maybe_item.pickUp(instance.state);
+                if (!instance.state.getCurrentRoom().items.contains(maybe_item.get().getId())) {
+                    instance.state.controller.presentUrgentMessage("I can't find the" + item + ".");
+                    return;
+                }
+                maybe_item.get().pickUp(instance.state);
             }
         });
     });
@@ -93,18 +98,22 @@ class TakeItemCommandParser implements CommandParser {
 }
 
 class DropItemCommandParser implements CommandParser {
-    private static final Pattern COMMAND_PATTERN = Pattern.compile("^drop(?: the)? ([a-zA-Z_]*)$");
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("^drop(?: the)? "+ItemAutocompleteHelper.NAME_REGEX+"$");
     private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^drop", COMMAND_PATTERN, "Drop what?", match -> {
         var item = match.group(1);
         return Optional.of(new Command() {
             @Override
             void execute(ZorkInstance instance) {
-                var maybe_item = instance.state.loaded_items.get(item);
-                if (maybe_item == null) {
+                var maybe_item = instance.state.lookupItem(item);
+                if (maybe_item.isEmpty()) {
                     instance.state.controller.presentMessage("What's a \"" + item + "\"?");
                     return;
                 }
-                maybe_item.drop(instance.state);
+                if (!instance.state.player.items.contains(maybe_item.get().getId())) {
+                    instance.state.controller.presentUrgentMessage("I can't find the" + item + ".");
+                    return;
+                }
+                maybe_item.get().drop(instance.state);
             }
         });
     });
@@ -142,7 +151,7 @@ class DropItemCommandParser implements CommandParser {
 }
 
 class GoCommandParser implements CommandParser {
-    private static final Pattern COMMAND_PATTERN  = Pattern.compile("^(?:go|move)(?: to(?: the)?)? (.*)$");
+    private static final Pattern COMMAND_PATTERN  = Pattern.compile("^(?:go|move)(?: to(?: the)?)? "+ItemAutocompleteHelper.NAME_REGEX+"$");
     private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^(?:go|move)", COMMAND_PATTERN, "Go where?", match -> {
         var place = match.group(1);
         return Optional.of(new Command() {
@@ -332,9 +341,9 @@ class ExitCommandParser implements CommandParser {
 }
 
 class SaveCommandParser implements CommandParser {
-    private final static Pattern SAVE_AS_PATTERN = Pattern.compile("^save as ([a-zA-Z1-9_\\-]*)$");
-    private final static Pattern LOAD_PATTERN = Pattern.compile("^load ([a-zA-Z1-9_\\-]*)$");
-    private final static Pattern DELETE_SAVE_PATTERN = Pattern.compile("^delete save ([a-zA-Z1-9_\\-]*)$");
+    private final static Pattern SAVE_AS_PATTERN = Pattern.compile("^save as "+ItemAutocompleteHelper.NAME_REGEX+"$");
+    private final static Pattern LOAD_PATTERN = Pattern.compile("^load "+ItemAutocompleteHelper.NAME_REGEX+"$");
+    private final static Pattern DELETE_SAVE_PATTERN = Pattern.compile("^delete save "+ItemAutocompleteHelper.NAME_REGEX+"$");
 
     @Override
     public void registerDirectCompletions(CompletionTrie trie) {
@@ -462,7 +471,7 @@ class SaveCommandParser implements CommandParser {
     }
 }
 class UseItemCommandParser implements CommandParser {
-    private static final Pattern COMMAND_PATTERN = Pattern.compile("^use(?: the)? ([a-zA-Z_]*)$");
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("^use(?: the)? "+ItemAutocompleteHelper.NAME_REGEX+"$");
     private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^use", COMMAND_PATTERN, "Use what?", match -> {
         var item = match.group(1);
         return Optional.of(new Command() {
