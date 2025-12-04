@@ -83,6 +83,7 @@ public class UIController extends Application implements ViewController {
                 try {
                     var maybe_instance = ZorkInstance.loadOrCreateNew(this);
                     if (maybe_instance.isEmpty()) {
+                        shutdownThreads();
                         return;
                     }
                     this.instance = maybe_instance.get();
@@ -99,6 +100,7 @@ public class UIController extends Application implements ViewController {
                         presentTextPrompt("Please enter the action you want to perform\n> ");
                         var line = consumeTextInput();
                         if (line.isEmpty()) {
+                            shutdownThreads();
                             return;
                         }
                         instance.advanceGame(this, line.get());
