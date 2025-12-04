@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 public class CompletionTrie {
-    TrieNode root = new TrieNode("");
+    final TrieNode root = new TrieNode("");
 
     void insert(String word) {
         root.put(new StringCharacterIterator(word));
@@ -29,9 +29,9 @@ public class CompletionTrie {
 }
 
 class TrieNode {
-    TreeMap<Character, TrieNode> children;
+    final TreeMap<Character, TrieNode> children;
     boolean isEnd = false;
-    String prefix;
+    final String prefix;
 
     public TrieNode(String prefix) {
         this.children = new TreeMap<>();

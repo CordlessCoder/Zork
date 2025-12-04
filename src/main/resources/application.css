@@ -1,0 +1,6 @@
+.root, .text-area, .text-field, .button, .combo-box {
+    -fx-font-size: 18pt;
+    -fx-font-family: "JetBrains Mono";
+    -fx-border-radius: 5pt;
+    -fx-border-insets: 3pt;
+}

@@ -8,11 +8,12 @@ import java.util.HashSet;
 
 public class Room {
     @JsonProperty("items")
+    final
     HashSet<String> items = new HashSet<>();
     @JsonProperty("description")
     private String description;
     @JsonProperty("paths")
-    public EnumMap<Direction, String> paths = new EnumMap<>(Direction.class);
+    public final EnumMap<Direction, String> paths = new EnumMap<>(Direction.class);
     @JsonIgnore
     private String id;
     @JsonProperty("name")

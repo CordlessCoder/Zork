@@ -22,8 +22,8 @@ public class UIController extends Application implements ViewController {
     private final EnumMap<Direction, Boolean> savedButtonState = new EnumMap<>(Direction.class);
     volatile ZorkInstance instance;
     private BlockingArrayListDeque<String> inputQueue;
-    private volatile boolean exitRequested;
-    private boolean gameExited = false;
+    private volatile boolean exitRequested = false;
+    private volatile boolean gameExited = false;
     private TextField commandPromptField;
     private TextArea outputArea;
     private Thread gameThread;
@@ -70,8 +70,10 @@ public class UIController extends Application implements ViewController {
         }
 
         Callback<AutoCompletionBinding.ISuggestionRequest, Collection<String>> suggestionProvider = request -> this.autocomplete(request.getUserText());
-        TextFields.bindAutoCompletion(this.commandPromptField, suggestionProvider);
+        var autocompletion_handle = TextFields.bindAutoCompletion(this.commandPromptField, suggestionProvider);
+        autocompletion_handle.setDelay(0);
 
+        scene.getStylesheets().add(Objects.requireNonNull(getClass().getClassLoader().getResource("application.css")).toExternalForm());
         stage.setScene(scene);
         stage.show();
 
@@ -105,23 +107,26 @@ public class UIController extends Application implements ViewController {
                         }
                         instance.advanceGame(this, line.get());
                     }
+                    System.err.println(this.exitRequested);
                     if (!this.exitRequested) {
                         this.gameExited = false;
                         presentTextPrompt("Would you like to play again? (y/n)\n>");
                         var answer = consumeTextInput();
                         if (answer.isEmpty() || !answer.get().toLowerCase().startsWith("y")) {
-                            break;
+                            shutdownThreads();
+                            return;
                         }
                     }
+                    shutdownThreads();
+                    return;
                 } catch (Exception e) {
                     // ensure UI shows unexpected errors
                     presentErrorMessage("Internal UI thread error: " + e.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
                 }
             }
-            shutdownThreads();
         }, "Zork-GameThread");
-        this.gameThread.start();
         stage.setOnCloseRequest(_ -> shutdownThreads());
+        this.gameThread.start();
     }
 
     private void submitInputFromPrompt() {
@@ -169,7 +174,9 @@ public class UIController extends Application implements ViewController {
 
     public void shutdownThreads() {
         exitRequested = true;
+        gameExited = true;
         // Unblock the game thread if it's waiting for input
+        inputQueue.try_push_front("");
         inputQueue.try_push_front("");
         try {
             // Wake game thread if it's waiting on something else
@@ -256,6 +263,9 @@ public class UIController extends Application implements ViewController {
 
     @Override
     public Optional<String> consumeTextInput() {
+        if (WasExitRequested()) {
+            return Optional.empty();
+        }
         String line;
         try {
             line = inputQueue.pop_back();

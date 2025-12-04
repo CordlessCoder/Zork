@@ -24,12 +24,14 @@ public class GameState {
     @JsonProperty("generic_rooms")
     HashMap<String, Room> generic_rooms;
     @JsonIgnore
+    final
     HashMap<String, Room> loaded_rooms = new HashMap<>();
     @JsonProperty("typed_items")
     TypedItems typed_items;
     @JsonProperty("inert_items")
     HashMap<String, Item> inert_items;
     @JsonIgnore
+    final
     HashMap<String, Item> loaded_items = new HashMap<>();
     @JsonProperty("player")
     Player player;
@@ -110,7 +112,7 @@ public class GameState {
             if (getCurrentRoom().items.contains(item_name)) {
                 item.useInRoom(this);
                 return;
-            };
+            }
             controller.presentUrgentMessage("You don't have this!");
             return;
         }

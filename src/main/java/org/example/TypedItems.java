@@ -14,18 +14,23 @@ enum PizzaItemState {
 
 public class TypedItems {
     @JsonProperty("keys")
+    final
     Keys keys = new Keys();
 
     @JsonProperty("computer")
+    final
     Computer computer = new Computer();
 
     @JsonProperty("oven")
+    final
     Oven oven = new Oven();
 
     @JsonProperty("pizza")
+    final
     Pizza pizza = new Pizza();
 
     @JsonProperty("mold")
+    final
     BlackMold mold = new BlackMold();
 
     private TypedItems() {
@@ -108,9 +113,7 @@ class Oven extends Item {
                 context.player.addItem("pizza");
                 status = PizzaStatus.Taken;
             }
-            case Taken -> {
-                context.controller.presentMessage("The oven is cooling down.");
-            }
+            case Taken -> context.controller.presentMessage("The oven is cooling down.");
         }
     }
 }
@@ -162,10 +165,7 @@ class Pizza extends Item {
 
     @Override
     public String toString() {
-        return "Pizza{" +
-                "state=" + state +
-                ", triedToEatBurnt=" + triedToEatBurnt +
-                '}';
+        return "Pizza{" + "state=" + state + ", triedToEatBurnt=" + triedToEatBurnt + '}';
     }
 }
 

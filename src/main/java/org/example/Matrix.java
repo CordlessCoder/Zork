@@ -46,7 +46,7 @@ public class Matrix<T> implements Iterable<MatrixElement<T>> {
         return storage.get(row * width + column);
     }
 
-    // Discards all elements in the matrix, and resizes it to the given width and height.
+    // Discards all elements in the matrix and resizes it to the given width and height.
     public void resize(int width, int height) {
         storage.clear();
         if (this.width * this.height > width * height) {
