@@ -3,9 +3,14 @@ package org.example;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
+// All state that requires overridden methods to work(items, rooms) is stored in a Typed* class, which is
+// loaded into a type-erased map at runtime
 public class GameState {
     @JsonIgnore
     private final ArrayList<Consumer<GameState>> updateHooks = new ArrayList<>();
@@ -17,10 +22,18 @@ public class GameState {
     public String save_name;
     @JsonIgnore
     public MapLayout layout;
-    @JsonProperty("rooms")
-    HashMap<String, Room> rooms;
-    @JsonProperty("items")
-    HashMap<String, Item> items;
+    @JsonProperty("typed_rooms")
+    TypedRooms typed_rooms;
+    @JsonProperty("generic_rooms")
+    HashMap<String, Room> generic_rooms;
+    @JsonIgnore
+    HashMap<String, Room> loaded_rooms = new HashMap<>();
+    @JsonProperty("typed_items")
+    TypedItems typed_items;
+    @JsonProperty("unusable_items")
+    HashMap<String, Item> unusable_items;
+    @JsonIgnore
+    HashMap<String, Item> loaded_items = new HashMap<>();
     @JsonProperty("player")
     Player player;
 
@@ -41,16 +54,25 @@ public class GameState {
 
     public Room getCurrentRoom() {
         var room_name = player.getCurrentRoomName();
-        return rooms.get(room_name);
+        return loaded_rooms.get(room_name);
     }
 
     ///  This method should be called after updating the room structure.
     public void roomUpdateHook() {
-        for (var room : rooms.entrySet()) {
+        loaded_rooms.putAll(generic_rooms);
+        loaded_rooms.putAll(typed_rooms.toRoomMap());
+        for (var room : loaded_rooms.entrySet()) {
             String name = room.getKey();
             room.getValue().setId(name);
         }
-        layout = new MapLayout(rooms);
+        layout = new MapLayout(loaded_rooms);
+        notifyUpdateHooks();
+    }
+
+    ///  This method should be called after updating the item structure.
+    public void itemUpdateHook() {
+        loaded_items.putAll(typed_items.toItemMap());
+        loaded_items.putAll(unusable_items);
         notifyUpdateHooks();
     }
 
@@ -58,16 +80,19 @@ public class GameState {
         return CommandRegistry.autocomplete(this, text);
     }
 
-    private void showWelcome() {
-        controller.presentMessage("Welcome to the University adventure!");
-        controller.presentMessage("Type 'help' if you need help.");
-        lookMessage();
-    }
-
     void showHelp() {
         controller.presentMessage("You are lost. You are alone. You wander around the university.");
         controller.presentMessage("Possible commands are:");
         controller.presentMessage(CommandRegistry.describeCommands());
+    }
+
+    void useItem(String item_name) {
+        if (!player.hasItem(item_name)) {
+            controller.presentUrgentMessage("You don't have this!");
+            return;
+        }
+        var item = loaded_items.get(item_name);
+        item.use(this);
     }
 
     void takeItem(String item_name) {
@@ -95,7 +120,6 @@ public class GameState {
         out.append("Map:\n");
         int room_name_length = layout.layout.streamVal().filter(Objects::nonNull).mapToInt(room -> room.name.length()).max().orElse(0);
         char[] delimiters = {'[', ']'};
-        var indent = "    ";
         var no_room = " ".repeat(room_name_length + delimiters.length);
         var horizontal_connector = "<=>";
         var no_horizontal_connector = " ".repeat(horizontal_connector.length());
@@ -104,25 +128,21 @@ public class GameState {
 
         for (int row_idx = 0; row_idx < layout.layout.getHeight(); row_idx++) {
             var row = layout.layout.row(row_idx);
-            out.append(indent);
             // Print upper/north connectors
-            if (row_idx > 0) {
-                for (int col_idx = 0; col_idx < layout.layout.getWidth(); col_idx++) {
-                    var room = row.get(col_idx);
+            for (int col_idx = 0; row_idx > 0 && col_idx < layout.layout.getWidth(); col_idx++) {
+                var room = row.get(col_idx);
 
-                    if (col_idx > 0) {
-                        out.append(no_horizontal_connector);
-                    }
+                if (col_idx > 0) {
+                    out.append(no_horizontal_connector);
+                }
 
-                    if (room != null && room.getExitName(Direction.North) != null) {
-                        out.append(vertical_connector);
-                    } else {
-                        out.append(no_room);
-                    }
+                if (room != null && room.getExitName(Direction.North) != null) {
+                    out.append(vertical_connector);
+                } else {
+                    out.append(no_room);
                 }
             }
             out.append('\n');
-            out.append(indent);
             // Print room names and left/west connectors
             for (int col_idx = 0; col_idx < layout.layout.getWidth(); col_idx++) {
                 var room = row.get(col_idx);
@@ -134,15 +154,12 @@ public class GameState {
                     continue;
                 }
                 if (col_idx > 0) {
-                    if (room.getExitName(Direction.West) != null) {
-                        out.append(horizontal_connector);
-                    } else {
-                        out.append(no_horizontal_connector);
-                    }
+                    var connector = room.getExitName(Direction.West) != null ? horizontal_connector : no_horizontal_connector;
+                    out.append(connector);
                 }
-                var display_name = StringUtils.centerString(room.name, room_name_length);
                 var display_delimiters = room.getId().equals(current_room) ? delimiters : new char[]{' ', ' '};
-                out.append(display_delimiters[0]).append(display_name).append(display_delimiters[1]);
+                var display_name = StringUtils.centerString(display_delimiters[0] + room.name + display_delimiters[1], room_name_length);
+                out.append(display_name);
             }
             out.append('\n');
         }
@@ -151,7 +168,7 @@ public class GameState {
 
     void lookMessage() {
         controller.presentMessage("Your items: " + player.getItemString());
-        controller.presentMessage(rooms.get(player.getCurrentRoomName()).getLongDescription());
+        controller.presentMessage(loaded_rooms.get(player.getCurrentRoomName()).getLongDescription());
     }
 
     void goTo(String place) {
@@ -162,14 +179,17 @@ public class GameState {
         }
         Direction direction = parsed_direction.get();
 
-        Room nextRoom = rooms.get(this.getCurrentRoom().getExitName(direction));
+        Room nextRoom = loaded_rooms.get(this.getCurrentRoom().getExitName(direction));
 
         if (nextRoom == null) {
             controller.presentMessage("There is no door!");
             return;
         }
-        player.setCurrentRoomName(nextRoom.getId());
+        nextRoom.onEnter(this);
         notifyUpdateHooks();
+        if (this.controller.WasExitRequested()) {
+            return;
+        }
         lookMessage();
     }
 
@@ -181,6 +201,6 @@ public class GameState {
 
     @Override
     public String toString() {
-        return "Zork{" + "rooms=" + rooms + ", items=" + items + ", isExitRequested=" + isExitRequested + ", player=" + player + ", controller=" + controller + ", save_name='" + save_name + '\'' + '}';
+        return "Zork{" + "rooms=" + loaded_rooms + ", items=" + loaded_items + ", isExitRequested=" + isExitRequested + ", player=" + player + ", controller=" + controller + ", save_name='" + save_name + '\'' + '}';
     }
 }

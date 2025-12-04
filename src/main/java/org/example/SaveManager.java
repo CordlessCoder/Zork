@@ -39,6 +39,7 @@ public class SaveManager {
         var game = new ObjectMapper().readValue(save_file_path, GameState.class);
         game.save_name = name;
         game.roomUpdateHook();
+        game.itemUpdateHook();
         return game;
     }
 
@@ -57,6 +58,7 @@ public class SaveManager {
         }
         game.map(zork -> {
             zork.roomUpdateHook();
+            zork.itemUpdateHook();
             zork.save_name = save_name;
             return zork;
         });

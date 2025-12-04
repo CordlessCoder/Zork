@@ -1,10 +1,7 @@
 package org.example;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import tools.jackson.databind.ObjectMapper;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.HashSet;
 
 public class Player {
@@ -31,7 +28,7 @@ public class Player {
         return currentRoomName;
     }
 
-    public void setCurrentRoomName(String room) {
+    public void setCurrentRoomId(String room) {
         this.currentRoomName = room;
     }
 

@@ -7,7 +7,7 @@ public class ZorkInstance {
 
     public static Optional<ZorkInstance> loadOrCreateNew(ViewController controller) {
         GameState state = null;
-        controller.presentMessage("Welcome to Zork, pick a save file or create a new one");
+        controller.presentMessage("Welcome to my text adventure, pick a save file or create a new one");
         var save_names = SaveManager.listSaveNames();
         var selected = controller.presentTextSelectionListWithPrompt(save_names, "enter the name of a save file to create");
         // Intentionally compares pointers to check if the user selected one of the options in the list, or entered a new save name.

@@ -18,6 +18,10 @@ public class Room {
     @JsonProperty("name")
     public String name;
 
+    public void onEnter(GameState context) {
+        context.player.setCurrentRoomId(this.id);
+    }
+
     public void setId(String id) {
         this.id = id;
     }

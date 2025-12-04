@@ -4,7 +4,22 @@
     "room": "test_room",
     "items": []
   },
-  "rooms": {
+  "typed_rooms": {
+    "winning_room": {
+      "name": "Winning Room",
+      "description": "in the part where he kills you",
+      "paths": {
+        "East": "test_room"
+      }
+    }
+  },
+  "typed_items": {
+    "winning_key": {
+      "description": "a key that makes you a winner",
+      "name": "Winning Key"
+    }
+  },
+  "generic_rooms": {
     "north_room": {
       "name": "North Room",
       "description": "north of the test room",
@@ -21,7 +36,8 @@
       "paths": {
         "North": "north_room",
         "East": "east_room",
-        "South": "south_room"
+        "South": "south_room",
+        "West": "winning_room"
       }
     },
     "east_room": {
@@ -44,10 +60,13 @@
       "description": "east of the south room",
       "paths": {
         "West": "south_room"
-      }
+      },
+      "items": [
+        "winning_key"
+      ]
     }
   },
-  "items": {
+  "unusable_items": {
     "test_item": {
       "description": "a test item",
       "name": "TEST"

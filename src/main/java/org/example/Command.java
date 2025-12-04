@@ -451,3 +451,46 @@ class SaveCommandParser implements CommandParser {
         return "Pick up an item";
     }
 }
+class UseItemCommandParser implements CommandParser {
+    private static final Pattern COMMAND_PATTERN = Pattern.compile("^use(?: the)? ([a-zA-Z_]*)$");
+    private static final RegexCommandHelper<Command> matcher = new RegexCommandHelper<>("^use", COMMAND_PATTERN, "Use what?", match -> {
+        var item = match.group(1);
+        return Optional.of(new Command() {
+            @Override
+            void execute(ZorkInstance instance) {
+                instance.state.useItem(item);
+            }
+        });
+    });
+
+    @Override
+    public void registerDirectCompletions(CompletionTrie trie) {
+        trie.insertAll("use");
+    }
+
+    @Override
+    public void autoComplete(GameState context, ArrayList<String> output, String text) {
+        var matcher = COMMAND_PATTERN.matcher(text);
+        if (!matcher.matches()) {
+            return;
+        }
+        var before_name = text.substring(0, matcher.start(1));
+        var item_name = matcher.group(1);
+        ItemAutocompleteHelper.autoCompleteHeldItems(context, output, item_name, before_name);
+    }
+
+    @Override
+    public Optional<Command> parse(String text) {
+        return matcher.apply(text);
+    }
+
+    @Override
+    public String getName() {
+        return "take";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Pick up an item";
+    }
+}
