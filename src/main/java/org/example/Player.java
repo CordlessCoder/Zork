@@ -10,7 +10,7 @@ public class Player {
     @JsonProperty("name")
     private String name;
     @JsonProperty("room")
-    private String currentRoomName;
+    private String currentRoomId;
 
     public String getName() {
         return name;
@@ -24,12 +24,12 @@ public class Player {
         return sb.toString().trim();
     }
 
-    public String getCurrentRoomName() {
-        return currentRoomName;
+    public String getCurrentRoomId() {
+        return currentRoomId;
     }
 
     public void setCurrentRoomId(String room) {
-        this.currentRoomName = room;
+        this.currentRoomId = room;
     }
 
     public void removeItem(String item_name) {
@@ -46,6 +46,6 @@ public class Player {
 
     @Override
     public String toString() {
-        return "Player{" + "name='" + name + '\'' + ", currentRoom='" + currentRoomName + '\'' + '}';
+        return "Player{" + "name='" + name + '\'' + ", currentRoom='" + currentRoomId + '\'' + '}';
     }
 }

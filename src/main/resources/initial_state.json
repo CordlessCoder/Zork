@@ -1,72 +1,84 @@
 {
   "player": {
     "name": "Guy",
-    "room": "test_room",
+    "room": "hallway",
     "items": []
   },
   "typed_rooms": {
-    "winning_room": {
-      "name": "Winning Room",
-      "description": "in the part where he kills you",
+    "outdoors": {
+      "name": "outdoors",
+      "description": "outside. Freedom at last!",
       "paths": {
-        "East": "test_room"
-      }
-    }
-  },
-  "typed_items": {
-    "winning_key": {
-      "description": "a key that makes you a winner",
-      "name": "Winning Key"
-    }
-  },
-  "generic_rooms": {
-    "north_room": {
-      "name": "North Room",
-      "description": "north of the test room",
-      "items": [
-        "test_item"
-      ],
-      "paths": {
-        "South": "test_room"
+        "East": "hallway"
       }
     },
-    "test_room": {
-      "name": "Test Room",
-      "description": "in a test room",
+    "bathroom": {
+      "name": "bathroom",
+      "description": "in your bathroom",
       "paths": {
-        "North": "north_room",
-        "East": "east_room",
-        "South": "south_room",
-        "West": "winning_room"
-      }
-    },
-    "east_room": {
-      "name": "East Room",
-      "description": "east of the test room",
-      "paths": {
-        "West": "test_room"
-      }
-    },
-    "south_room": {
-      "name": "South Room",
-      "description": "south of the test room",
-      "paths": {
-        "North": "test_room",
-        "East": "east_of_south_room"
-      }
-    },
-    "east_of_south_room": {
-      "name": "East of South Room",
-      "description": "east of the south room",
-      "paths": {
-        "West": "south_room"
+        "South": "hallway"
       },
       "items": [
-        "winning_key"
+        "mold"
       ]
     }
   },
-  "unusable_items": {
+  "typed_items": {
+    "keys": {
+      "description": "your keys",
+      "name": "Keys"
+    },
+    "computer": {
+      "description": "your computer",
+      "name": "Computer"
+    },
+    "oven": {
+      "description": "your oven",
+      "name": "Oven"
+    },
+    "pizza": {
+      "description": "a pizza",
+      "name": "Pizza"
+    },
+    "mold": {
+      "description": "it's mold",
+      "name": "Black Mold"
+    }
+  },
+  "generic_rooms": {
+    "hallway": {
+      "name": "Hallway",
+      "description": "in your hallway",
+      "paths": {
+        "West": "outdoors",
+        "South": "kitchen",
+        "North": "bathroom"
+      }
+    },
+    "kitchen": {
+      "name": "Kitchen",
+      "description": "in your kitchen",
+      "paths": {
+        "North": "hallway",
+        "East": "player_room"
+      },
+      "items": [
+        "oven"
+      ]
+    },
+    "player_room": {
+      "name": "Player Room",
+      "description": "in your room",
+      "paths": {
+        "West": "kitchen"
+      },
+      "items": [
+        "keys",
+        "computer"
+      ]
+    }
+  },
+  "inert_items": {
     "test_item": {
       "description": "a test item",
       "name": "TEST"

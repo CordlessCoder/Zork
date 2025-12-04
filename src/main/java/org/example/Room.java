@@ -67,7 +67,7 @@ public class Room {
     }
 
     public String getLongDescription() {
-        return "You are " + description + ".\nExits: " + getExitString() + "\nItems: " + getItemString();
+        return "You are " + this.getDescription() + ".\nExits: " + getExitString() + "\nItems: " + getItemString();
     }
 
     @Override

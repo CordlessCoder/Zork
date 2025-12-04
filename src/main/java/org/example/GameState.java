@@ -30,8 +30,8 @@ public class GameState {
     HashMap<String, Room> loaded_rooms = new HashMap<>();
     @JsonProperty("typed_items")
     TypedItems typed_items;
-    @JsonProperty("unusable_items")
-    HashMap<String, Item> unusable_items;
+    @JsonProperty("inert_items")
+    HashMap<String, Item> inert_items;
     @JsonIgnore
     HashMap<String, Item> loaded_items = new HashMap<>();
     @JsonProperty("player")
@@ -53,7 +53,7 @@ public class GameState {
     }
 
     public Room getCurrentRoom() {
-        var room_name = player.getCurrentRoomName();
+        var room_name = player.getCurrentRoomId();
         return loaded_rooms.get(room_name);
     }
 
@@ -72,7 +72,11 @@ public class GameState {
     ///  This method should be called after updating the item structure.
     public void itemUpdateHook() {
         loaded_items.putAll(typed_items.toItemMap());
-        loaded_items.putAll(unusable_items);
+        loaded_items.putAll(inert_items);
+        for (var item : loaded_items.entrySet()) {
+            String name = item.getKey();
+            item.getValue().setId(name);
+        }
         notifyUpdateHooks();
     }
 
@@ -88,31 +92,18 @@ public class GameState {
 
     void useItem(String item_name) {
         if (!player.hasItem(item_name)) {
+            if (getCurrentRoom().items.contains(item_name)) {
+                var item = loaded_items.get(item_name);
+                item.useInRoom(this);
+                return;
+            };
             controller.presentUrgentMessage("You don't have this!");
             return;
         }
         var item = loaded_items.get(item_name);
-        item.use(this);
+        item.useInInventory(this);
     }
 
-    void takeItem(String item_name) {
-        if (!getCurrentRoom().takeItem(item_name)) {
-            controller.presentMessage("I can't find this item!");
-            return;
-        }
-        player.addItem(item_name);
-        notifyUpdateHooks();
-    }
-
-    void dropItem(String item_name) {
-        if (!player.hasItem(item_name)) {
-            controller.presentMessage("I don't have this!");
-            return;
-        }
-        player.removeItem(item_name);
-        getCurrentRoom().addItem(item_name);
-        notifyUpdateHooks();
-    }
 
 
     void mapMessage() {
@@ -124,7 +115,7 @@ public class GameState {
         var horizontal_connector = "<=>";
         var no_horizontal_connector = " ".repeat(horizontal_connector.length());
         var vertical_connector = StringUtils.centerString("|", room_name_length + delimiters.length);
-        var current_room = this.player.getCurrentRoomName();
+        var current_room = this.player.getCurrentRoomId();
 
         for (int row_idx = 0; row_idx < layout.layout.getHeight(); row_idx++) {
             var row = layout.layout.row(row_idx);
@@ -168,7 +159,7 @@ public class GameState {
 
     void lookMessage() {
         controller.presentMessage("Your items: " + player.getItemString());
-        controller.presentMessage(loaded_rooms.get(player.getCurrentRoomName()).getLongDescription());
+        controller.presentMessage(loaded_rooms.get(player.getCurrentRoomId()).getLongDescription());
     }
 
     void goTo(String place) {
@@ -180,6 +171,7 @@ public class GameState {
         Direction direction = parsed_direction.get();
 
         Room nextRoom = loaded_rooms.get(this.getCurrentRoom().getExitName(direction));
+        String old_room = this.getCurrentRoom().getId();
 
         if (nextRoom == null) {
             controller.presentMessage("There is no door!");
@@ -190,7 +182,9 @@ public class GameState {
         if (this.controller.WasExitRequested()) {
             return;
         }
-        lookMessage();
+        if (!old_room.equals(player.getCurrentRoomId())) {
+            lookMessage();
+        }
     }
 
     void setExitRequested() {

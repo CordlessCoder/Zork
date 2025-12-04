@@ -50,7 +50,12 @@ class TakeItemCommandParser implements CommandParser {
         return Optional.of(new Command() {
             @Override
             void execute(ZorkInstance instance) {
-                instance.state.takeItem(item);
+                var maybe_item = instance.state.loaded_items.get(item);
+                if (maybe_item == null) {
+                    instance.state.controller.presentMessage("What's a \"" + item + "\"?");
+                    return;
+                }
+                maybe_item.pickUp(instance.state);
             }
         });
     });
@@ -94,7 +99,12 @@ class DropItemCommandParser implements CommandParser {
         return Optional.of(new Command() {
             @Override
             void execute(ZorkInstance instance) {
-                instance.state.dropItem(item);
+                var maybe_item = instance.state.loaded_items.get(item);
+                if (maybe_item == null) {
+                    instance.state.controller.presentMessage("What's a \"" + item + "\"?");
+                    return;
+                }
+                maybe_item.drop(instance.state);
             }
         });
     });
