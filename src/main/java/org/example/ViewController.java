@@ -13,7 +13,7 @@ public interface ViewController {
     ///  Presents the user with a list of options.
     <T> Optional<T> presentSelectionList(List<T> options);
 
-    ///  Presents the user with a list of options, or a text-input based prompt.
+    ///  Presents the user with a list of options or a text-input-based prompt.
     String presentTextSelectionListWithPrompt(List<String> options, String prompt);
 
     ///  Returns a single line provided by the user, if one was provided.

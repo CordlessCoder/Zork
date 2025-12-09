@@ -17,7 +17,7 @@ public class BlockingArrayListDeque<T> {
     }
 
     public int size() {
-        synchronized (list) {
+        synchronized (this) {
             return len;
         }
     }
@@ -28,99 +28,99 @@ public class BlockingArrayListDeque<T> {
     }
 
     private int freeBackIndex() {
-        synchronized (list) {
+        synchronized (this) {
             return (start + len) % this.capacity();
         }
     }
 
     private int backIndex() {
-        synchronized (list) {
+        synchronized (this) {
             return (start + len - 1) % this.capacity();
         }
     }
 
     private int frontIndex() {
-        synchronized (list) {
+        synchronized (this) {
             return start;
         }
     }
 
     private int freeFrontIndex() {
-        synchronized (list) {
+        synchronized (this) {
             return (this.capacity() + start - 1) % this.capacity();
         }
     }
 
     ///  Returns true if this operation successfully pushed the value
     public boolean try_push_back(T item) {
-        synchronized (list) {
+        synchronized (this) {
             if (len >= this.capacity()) {
                 return false;
             }
             list.set(this.freeBackIndex(), item);
             len++;
-            list.notifyAll();
+            this.notifyAll();
             return true;
         }
     }
 
     public void push_back(T item) throws InterruptedException {
-        synchronized (list) {
+        synchronized (this) {
             while (!this.try_push_back(item)) {
-                list.wait();
+                this.wait();
             }
-            list.notifyAll();
+            this.notifyAll();
         }
     }
 
     ///  Returns true if this operation successfully pushed the value
     public boolean try_push_front(T item) {
-        synchronized (list) {
+        synchronized (this) {
             if (len >= this.capacity()) {
                 return false;
             }
             start = this.freeFrontIndex();
             len++;
             list.set(start, item);
-            list.notifyAll();
+            this.notifyAll();
             return true;
         }
     }
 
     public void push_front(T item) throws InterruptedException {
-        synchronized (list) {
+        synchronized (this) {
             while (!this.try_push_front(item)) {
-                list.wait();
+                this.wait();
             }
-            list.notifyAll();
+            this.notifyAll();
         }
     }
 
     public boolean isEmpty() {
-        synchronized (list) {
+        synchronized (this) {
             return len == 0;
         }
     }
 
     public Optional<T> try_pop_front() {
-        synchronized (list) {
+        synchronized (this) {
             if (this.isEmpty()) {
                 return Optional.empty();
             }
             var value = list.get(this.frontIndex());
             len -= 1;
             start = (start + 1) % this.capacity();
-            list.notifyAll();
+            this.notifyAll();
             return Optional.of(value);
         }
     }
 
     public T pop_front() throws InterruptedException {
-        synchronized (list) {
+        synchronized (this) {
             while (true) {
                 var maybe_pop = try_pop_front();
                 if (maybe_pop.isEmpty()) {
-                    list.wait();
+                    this.wait();
                     continue;
                 }
                 return maybe_pop.get();
@@ -129,23 +129,23 @@ public class BlockingArrayListDeque<T> {
     }
 
     public Optional<T> try_pop_back() {
-        synchronized (list) {
+        synchronized (this) {
             if (this.isEmpty()) {
                 return Optional.empty();
             }
             var value = list.get(this.backIndex());
             len -= 1;
-            list.notifyAll();
+            this.notifyAll();
             return Optional.of(value);
         }
     }
 
     public T pop_back() throws InterruptedException {
-        synchronized (list) {
+        synchronized (this) {
             while (true) {
                 var maybe_pop = try_pop_back();
                 if (maybe_pop.isEmpty()) {
-                    list.wait();
+                    this.wait();
                     continue;
                 }
                 return maybe_pop.get();
